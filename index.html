@@ -114,25 +114,24 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
     <div class="grid">
       <div class="card">
         <h3>🤖 Asistente IA – Recomendaciones comerciales</h3>
-        <p class="status">El asistente analiza los indicadores <b>con los filtros activos</b>. Modo automático: motor analítico integrado (sin conexión). Modo LLM: Claude (Anthropic) con su API key, que se guarda solo en este navegador.</p>
+        <p class="status">El asistente analiza los indicadores <b>con los filtros activos</b>. Modo automático: motor analítico integrado (sin conexión). Modo IA generativa: modelo de lenguaje (Llama 3.3 vía Cloudflare Workers AI, o Claude si hay API key), disponible directamente desde el enlace.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
           <button class="btn" id="btnLocal">Generar recomendaciones (motor integrado)</button>
         </div>
         <div id="recoLocal"></div>
       </div>
       <div class="card">
-        <h3>💬 Pregunte a la IA (Claude)</h3>
-        <label class="status">API key de Anthropic</label>
-        <input type="password" id="apiKey" placeholder="sk-ant-..." style="width:100%;padding:7px;border:1px solid var(--line);border-radius:6px">
-        <label class="status">Modelo</label>
-        <select id="model" style="width:100%;padding:7px;border:1px solid var(--line);border-radius:6px">
-          <option value="claude-sonnet-5-5">claude-sonnet-5-5</option>
-          <option value="claude-opus-5-5">claude-opus-5-5</option>
-          <option value="claude-haiku-5-5">claude-haiku-5-5</option>
-        </select>
+        <h3>💬 Pregunte a la IA generativa</h3>
+        <details class="status"><summary>Usar mi propia API key de Anthropic (opcional)</summary>
+          <select id="model" style="width:100%;padding:7px;border:1px solid var(--line);border-radius:6px;margin-top:4px">
+            <option value="claude-sonnet-5-5">claude-sonnet-5-5</option>
+            <option value="claude-haiku-5-5">claude-haiku-5-5</option>
+          </select>
+          <input type="password" id="apiKey" placeholder="sk-ant-..." style="width:100%;padding:7px;border:1px solid var(--line);border-radius:6px;margin-top:4px">
+        </details>
         <label class="status">Pregunta</label>
         <textarea id="q" rows="3" style="width:100%;padding:7px;border:1px solid var(--line);border-radius:6px">Con base en los indicadores, dame 5 recomendaciones comerciales priorizadas, con la evidencia numérica de cada una.</textarea>
-        <button class="btn" id="btnLLM" style="margin-top:6px">Consultar a Claude</button>
+        <button class="btn" id="btnLLM" style="margin-top:6px">Consultar a la IA</button>
         <div id="recoLLM" class="chat" style="margin-top:10px"></div>
         <p class="status">⚠️ Las recomendaciones de IA deben ser validadas críticamente por el equipo antes de incorporarse a las conclusiones.</p>
       </div>
@@ -152,6 +151,6 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
     </div>
   </div>
 </main>
-<script src="app.js"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

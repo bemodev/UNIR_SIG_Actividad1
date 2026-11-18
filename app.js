@@ -273,10 +273,24 @@ function motorLocal() {
   const ciu = s.byCiudad; R.push(['Ciudades', `${ciu[0].k} aporta ${fmtP(ciu[0].venta / K.venta)} de las ventas; ${ciu[ciu.length - 1].k} solo ${fmtP(ciu[ciu.length - 1].venta / K.venta)}. Evaluar expansión en la plaza líder y plan de crecimiento local en la rezagada.`]);
   $('recoLocal').innerHTML = R.map(([t, d]) => `<div class="reco"><b>${t}</b>${d}</div>`).join('') + '<p class="status">Generado por reglas analíticas sobre los datos filtrados. Validar críticamente antes de usar.</p>';
 }
+// URL del Cloudflare Worker (proxy con la API key guardada en secreto). Vacío = solo modo con API key propia.
+const PROXY_URL = 'https://sfcp-ia.dariojose-betan0901.workers.dev';
 async function consultarLLM() {
-  const key = $('apiKey').value.trim(); if (!key) { $('recoLLM').textContent = 'Ingrese su API key de Anthropic.'; return; }
-  try { localStorage.setItem('sfcp_key', key); } catch (e) { }
+  const key = $('apiKey').value.trim();
+  if (!key && !PROXY_URL) { $('recoLLM').textContent = 'Ingrese su API key de Anthropic.'; return; }
   $('recoLLM').textContent = 'Consultando a Claude…';
+  if (!key) {
+    try {
+      const r = await fetch(PROXY_URL, { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ model: $('model').value, pregunta: $('q').value, contexto: contextoIA() }) });
+      const j = await r.json();
+      if (!r.ok) { $('recoLLM').textContent = 'Error: ' + (j.error?.message || r.status); return; }
+      const txt = j.content.map(c => c.text || '').join('\n') + `\n\n— Modelo: ${j.modelo || 'IA'}`;
+      $('recoLLM').innerHTML = txt.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch])).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#+\s*(.*)$/gm, '<b>$1</b>');
+    } catch (e) { $('recoLLM').textContent = 'Error de conexión: ' + e.message; }
+    return;
+  }
+  try { localStorage.setItem('sfcp_key', key); } catch (e) { }
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

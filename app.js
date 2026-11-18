@@ -299,17 +299,53 @@ function fillSelect(id, vals) {
 function initFilters() {
   for (const [id, k] of Object.entries(FSEL)) fillSelect(id, new Set(S.ventas.map(v => v[k])));
   const f = S.ventas.map(v => v.fecha).sort();
-  $('fDesde').value = f[0] || ''; $('fHasta').value = f[f.length - 1] || '';
+  S.fMin = f[0] || ''; S.fMax = f[f.length - 1] || '';
+  $('fDesde').value = S.fMin; $('fHasta').value = S.fMax;
 }
 function cascade() { // sucursal y producto dependientes
   const c = $('fCiudad').value, cat = $('fCategoria').value;
   fillSelect('fSucursal', new Set(S.ventas.filter(v => !c || v.ciudad === c).map(v => v.suc)));
   fillSelect('fProducto', new Set(S.ventas.filter(v => !cat || v.cat === cat).map(v => v.prod)));
 }
-function applyFilters() {
-  const d1 = $('fDesde').value, d2 = $('fHasta').value;
-  const sel = Object.entries(FSEL).map(([id, k]) => [k, $(id).value]).filter(x => x[1]);
-  S.rows = S.ventas.filter(v => (!d1 || v.fecha >= d1) && (!d2 || v.fecha <= d2) && sel.every(([k, val]) => v[k] === val));
+const selActivos = () => Object.entries(FSEL).map(([id, k]) => [k, $(id).value]).filter(x => x[1]);
+function filtrar(d1, d2) {
+  const sel = selActivos();
+  return S.ventas.filter(v => (!d1 || v.fecha >= d1) && (!d2 || v.fecha <= d2) && sel.every(([k, val]) => v[k] === val));
+}
+function applyFilters() { S.rows = filtrar($('fDesde').value, $('fHasta').value); }
+
+/* ---------- Filtro cruzado (clic en gráficas) y chips de filtros activos ---------- */
+const CHART_FILTER = { cTopProd: 'fProducto', cProdUtil: 'fProducto', cMatriz: 'fProducto', cCiudad: 'fCiudad', cSucursal: 'fSucursal',
+  cSucMargen: 'fSucursal', cSucTiempo: 'fSucursal', cSegmento: 'fSegmento', cSegTicket: 'fSegmento', cCategoria: 'fCategoria', cCanal: 'fCanal' };
+const FNAME = { fCiudad: 'Ciudad', fSucursal: 'Sucursal', fSegmento: 'Segmento', fCategoria: 'Categoría', fProducto: 'Producto', fCanal: 'Canal' };
+function crossFilter(fid, val) {
+  const s = $(fid);
+  if (s.value === val) s.value = '';
+  else {
+    if (![...s.options].some(o => o.value === val)) { // opción oculta por un filtro padre: liberar el padre
+      if (fid === 'fSucursal') $('fCiudad').value = '';
+      if (fid === 'fProducto') $('fCategoria').value = '';
+      cascade();
+    }
+    s.value = val;
+  }
+  if (fid === 'fCiudad' || fid === 'fCategoria') cascade();
+  refresh();
+}
+function renderChips() {
+  const f = S.ventas.map(v => v.fecha), min = S.fMin, max = S.fMax;
+  const chips = Object.keys(FSEL).filter(id => $(id).value).map(id => [id, `${FNAME[id]}: ${$(id).value}`]);
+  if (($('fDesde').value && $('fDesde').value !== min) || ($('fHasta').value && $('fHasta').value !== max)) chips.unshift(['fFechas', `Fechas: ${$('fDesde').value} a ${$('fHasta').value}`]);
+  $('chips').innerHTML = chips.length
+    ? chips.map(([id, t]) => `<span class="chip">${esc(t)}<button data-f="${id}" title="Quitar filtro">×</button></span>`).join('') + '<button class="chip clear" data-f="all">Limpiar todo</button>'
+    : '<span class="hint">💡 Haga clic en una barra o sector de las gráficas para filtrar todo el dashboard por ese valor.</span>';
+  $('chips').querySelectorAll('[data-f]').forEach(b => b.onclick = () => {
+    const id = b.dataset.f;
+    if (id === 'all') return $('fReset').click();
+    if (id === 'fFechas') { $('fDesde').value = min; $('fHasta').value = max; }
+    else { $(id).value = ''; if (id === 'fCiudad' || id === 'fCategoria') cascade(); }
+    refresh();
+  });
 }
 
 /* ---------- Agregaciones ---------- */
@@ -330,10 +366,111 @@ function kpis(rows) {
 }
 
 /* ---------- Render ---------- */
+const REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function chart(id, cfg) {
-  if (S.charts[id]) S.charts[id].destroy();
-  cfg.options = Object.assign({ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }, cfg.options || {});
+  const fid = CHART_FILTER[id];
+  cfg.options = Object.assign({ responsive: true, maintainAspectRatio: false, animation: { duration: REDUCED ? 0 : 700, easing: 'easeOutQuart' },
+    plugins: { legend: { position: 'bottom' } } }, cfg.options || {});
+  if (fid) {
+    cfg.options.onClick = (e, els, ch) => {
+      if (!els.length) return;
+      const el = els[0], lab = ch.config.type === 'bubble' ? ch.data.datasets[el.datasetIndex].label : ch.data.labels[el.index];
+      crossFilter(fid, lab);
+    };
+    cfg.options.onHover = (e, els) => { e.native.target.style.cursor = els.length ? 'pointer' : 'default'; };
+  }
+  const old = S.charts[id];
+  if (old && old.config.type === cfg.type) { old.data = cfg.data; old.options = cfg.options; old.update(); return; } // transición suave
+  if (old) old.destroy();
   S.charts[id] = new Chart($(id), cfg);
+}
+
+/* ---------- KPI animados: contador, variación vs periodo anterior y mini tendencia ---------- */
+const KDEF = [
+  ['venta', 'Ventas totales', fmt$], ['util', 'Utilidad bruta', fmt$], ['margen', 'Margen bruto', fmtP], ['ticket', 'Ticket promedio', fmt$2],
+  ['ncli', 'N.º clientes', fmtN], ['ntx', 'N.º transacciones', fmtN], ['cant', 'Unidades vendidas', fmtN]];
+function animateNum(el, from, to, fmt) {
+  if (REDUCED || from === to) { el.textContent = fmt(to); return; }
+  const t0 = performance.now(), dur = 800;
+  const step = t => { const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(from + (to - from) * e); if (p < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+const isoAdd = (iso, d) => new Date(Date.parse(iso + 'T00:00:00Z') + d * 864e5).toISOString().slice(0, 10);
+// Comparación: periodo anterior de igual duración; si no hay datos, 2.ª mitad vs 1.ª mitad del rango elegido
+function comparacion() {
+  const d1 = $('fDesde').value || S.fMin, d2 = $('fHasta').value || S.fMax;
+  if (!d1 || !d2) return null;
+  const dias = Math.round((Date.parse(d2) - Date.parse(d1)) / 864e5) + 1;
+  const prev = filtrar(isoAdd(d1, -dias), isoAdd(d1, -1));
+  if (prev.length) return { cur: kpis(S.rows), prev: kpis(prev), label: 'vs periodo anterior' };
+  const mid = isoAdd(d1, Math.floor(dias / 2));
+  const a = filtrar(d1, isoAdd(mid, -1)), b = filtrar(mid, d2);
+  if (!a.length || !b.length) return null;
+  return { cur: kpis(b), prev: kpis(a), label: `2.ª mitad vs 1.ª mitad del periodo` };
+}
+function sparkSVG(vals) {
+  if (vals.length < 2) return '';
+  const w = 120, h = 30, mn = Math.min(...vals), mx = Math.max(...vals), rg = mx - mn || 1;
+  const pts = vals.map((v, i) => [(i / (vals.length - 1)) * w, h - 3 - ((v - mn) / rg) * (h - 6)]);
+  const line = pts.map(p => p.map(n => n.toFixed(1)).join(',')).join(' ');
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" class="spark"><polygon points="0,${h} ${line} ${w},${h}" class="area"/><polyline points="${line}"/></svg>`;
+}
+function renderKPIs(K, byMes) {
+  if (!$('kpis').children.length) {
+    $('kpis').innerHTML = KDEF.map(([k, l]) => `<div class="kpi" data-k="${k}"><div class="l">${l}</div><div class="v">—</div><div class="d"></div><div class="sp"></div></div>`).join('');
+    observeReveal($('kpis'));
+  }
+  S.kPrev = S.kPrev || {};
+  const cmp = comparacion();
+  for (const [k, , fmt] of KDEF) {
+    const box = $('kpis').querySelector(`[data-k="${k}"]`), val = K[k] || 0;
+    animateNum(box.querySelector('.v'), S.kPrev[k] ?? 0, val, fmt); S.kPrev[k] = val;
+    let d = '';
+    if (cmp) {
+      const c = cmp.cur[k] || 0, p = cmp.prev[k] || 0;
+      if (k === 'margen') { const pp = (c - p) * 100; d = `<span class="${pp >= 0 ? 'up' : 'down'}">${pp >= 0 ? '▲' : '▼'} ${Math.abs(pp).toFixed(1)} pp</span>`; }
+      else if (p) { const r = (c - p) / p; d = `<span class="${r >= 0 ? 'up' : 'down'}">${r >= 0 ? '▲' : '▼'} ${Math.abs(r * 100).toFixed(1)}%</span>`; }
+      if (d) d += ` <small>${cmp.label}</small>`;
+    }
+    box.querySelector('.d').innerHTML = d;
+    box.querySelector('.sp').innerHTML = sparkSVG(byMes.map(m => m[k] || 0));
+  }
+}
+
+/* ---------- Hallazgos clave automáticos ---------- */
+function renderInsights(R, byMes, bySuc, byProd, bySeg, K) {
+  const cards = [];
+  if (byMes.length >= 2) {
+    const n = byMes.length >= 24 ? 12 : Math.floor(byMes.length / 2);
+    const ult = byMes.slice(-n).reduce((s, d) => s + d.venta, 0), ant = byMes.slice(-2 * n, -n).reduce((s, d) => s + d.venta, 0);
+    if (ant) {
+      const r = (ult - ant) / ant;
+      cards.push({ ico: r >= 0 ? '📈' : '📉', t: 'Tendencia de ventas', v: `${r >= 0 ? '+' : '−'}${Math.abs(r * 100).toFixed(1)}%`, cls: r >= 0 ? 'up' : 'down',
+        s: `Últimos ${n} meses (${fmt$(ult)}) vs ${n} anteriores (${fmt$(ant)})` });
+    }
+  }
+  const sU = [...bySuc].sort((a, b) => b.util - a.util)[0];
+  if (sU) cards.push({ ico: '🏆', t: 'Sucursal más rentable', v: sU.k, s: `${fmt$(sU.util)} de utilidad · margen ${fmtP(sU.margen)}`, f: ['fSucursal', sU.k] });
+  const pU = [...byProd].sort((a, b) => b.util - a.util)[0];
+  if (pU) cards.push({ ico: '🍕', t: 'Producto más rentable', v: pU.k, s: `${fmt$(pU.util)} · ${fmtP(pU.util / (K.util || 1))} de la utilidad total`, f: ['fProducto', pU.k] });
+  const sg = bySeg[0];
+  if (sg) cards.push({ ico: '👥', t: 'Segmento líder', v: sg.k, s: `${fmtP(sg.venta / (K.venta || 1))} de las ventas · ticket ${fmt$2(sg.ticket)}`, f: ['fSegmento', sg.k] });
+  $('insights').innerHTML = cards.map((c, i) => `<div class="ins" ${c.f ? `data-fid="${c.f[0]}" data-val="${esc(c.f[1])}" title="Clic para filtrar"` : ''}>
+    <div class="ico">${c.ico}</div><div><div class="l">${c.t}</div><div class="v ${c.cls || ''}">${esc(c.v)}</div><div class="s">${c.s}</div></div></div>`).join('');
+  $('insights').querySelectorAll('[data-fid]').forEach(el => el.onclick = () => crossFilter(el.dataset.fid, el.dataset.val));
+  observeReveal($('insights'));
+}
+
+/* ---------- Animación de aparición al hacer scroll ---------- */
+const IO = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) { e.target.classList.add('in'); IO.unobserve(e.target); }
+}), { threshold: .08 }) : null;
+function observeReveal(root) {
+  [...root.children].forEach((el, i) => {
+    if (el.classList.contains('in')) return;
+    el.classList.add('reveal'); el.style.setProperty('--d', `${Math.min(i, 8) * 70}ms`);
+    if (IO && !REDUCED) IO.observe(el); else el.classList.add('in');
+  });
 }
 const moneyAxis = { ticks: { callback: v => '$' + (Math.abs(v) >= 1000 ? (v / 1000).toFixed(0) + 'k' : v) } };
 function barH(id, data, label, valFn = d => d.venta, color = PAL[0]) {
@@ -357,11 +494,8 @@ function refresh() {
   if ($('recoLocal').innerHTML) $('recoLocal').innerHTML = aviso;
   if ($('recoLLM').innerHTML) $('recoLLM').innerHTML = aviso;
   const R = S.rows, K = kpis(R);
-  const items = [['Ventas totales', fmt$(K.venta)], ['Utilidad bruta', fmt$(K.util)], ['Margen bruto', fmtP(K.margen)], ['Ticket promedio', fmt$2(K.ticket)],
-    ['N.º clientes', fmtN(K.ncli)], ['N.º transacciones', fmtN(K.ntx)], ['Unidades vendidas', fmtN(K.cant)]];
-  $('kpis').innerHTML = items.map(([l, v]) => `<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
-
   const byMes = group(R, 'mes').sort((a, b) => a.k.localeCompare(b.k));
+  renderChips(); renderKPIs(K, byMes);
   chart('cTrend', { type: 'line', data: { labels: byMes.map(d => d.k), datasets: [
     { label: 'Ventas', data: byMes.map(d => d.venta), borderColor: PAL[0], backgroundColor: PAL[0] + '22', fill: true, tension: .25 },
     { label: 'Utilidad bruta', data: byMes.map(d => d.util), borderColor: PAL[1], tension: .25 }] }, options: { scales: { y: moneyAxis } } });
@@ -420,6 +554,7 @@ function refresh() {
     { h: '% activos', v: d => (segCli[d.k] || {}).act || 0, f: d => fmtP((segCli[d.k] || {}).act || 0) },
     { h: 'NPS medio', v: d => (segCli[d.k] || {}).nps || 0, f: d => ((segCli[d.k] || {}).nps || 0).toFixed(1) }], bySeg);
 
+  renderInsights(R, byMes, bySuc, byProd, bySeg, K);
   S.summary = { K, byMes, byProd, byCiudad, bySuc, bySeg, byCat, byCanal, segCli };
 }
 function segInfo() {
@@ -471,42 +606,25 @@ function motorLocal() {
   const ciu = s.byCiudad; R.push(['Ciudades', `${ciu[0].k} aporta ${fmtP(ciu[0].venta / K.venta)} de las ventas; ${ciu[ciu.length - 1].k} solo ${fmtP(ciu[ciu.length - 1].venta / K.venta)}. Evaluar expansión en la plaza líder y plan de crecimiento local en la rezagada.`]);
   $('recoLocal').innerHTML = R.map(([t, d]) => `<div class="reco"><b>${t}</b>${d}</div>`).join('') + '<p class="status">Generado por reglas analíticas sobre los datos filtrados. Validar críticamente antes de usar.</p>';
 }
-// URL del Cloudflare Worker (proxy con la API key guardada en secreto). Vacío = solo modo con API key propia.
+// URL del Cloudflare Worker que ejecuta el modelo de IA (Workers AI, sin costo)
 const PROXY_URL = 'https://sfcp-ia.dariojose-betan0901.workers.dev';
 async function consultarLLM() {
-  const key = $('apiKey').value.trim();
-  if (!key && !PROXY_URL) { $('recoLLM').textContent = 'Ingrese su API key de Anthropic.'; return; }
   $('recoLLM').textContent = 'Consultando a la IA… (puede tardar 20-30 s)';
   const ver = S.ver;
-  if (!key) {
-    try {
-      const r = await fetch(PROXY_URL, { method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ model: $('model').value, pregunta: $('q').value, contexto: contextoIA() }) });
-      const j = await r.json();
-      if (ver !== S.ver) return; // los filtros cambiaron mientras se esperaba la respuesta
-      if (!r.ok) { $('recoLLM').textContent = 'Error: ' + (j.error?.message || r.status); return; }
-      const txt = j.content.map(c => c.text || '').join('\n') + `\n\n— Modelo: ${j.modelo || 'IA'}`;
-      $('recoLLM').innerHTML = txt.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch])).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#+\s*(.*)$/gm, '<b>$1</b>');
-    } catch (e) { $('recoLLM').textContent = 'Error de conexión: ' + e.message; }
-    return;
-  }
-  try { localStorage.setItem('sfcp_key', key); } catch (e) { }
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: $('model').value, max_tokens: 2000,
-        system: 'Eres un consultor senior de Inteligencia de Negocios para una cadena de pizzerías. Responde en español, de forma estructurada, citando cifras exactas del contexto JSON. No inventes datos que no estén en el contexto.',
-        messages: [{ role: 'user', content: `Datos del dashboard (con filtros aplicados):\n${JSON.stringify(contextoIA())}\n\nPregunta: ${$('q').value}` }] })
-    });
+    const r = await fetch(PROXY_URL, { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ pregunta: $('q').value, contexto: contextoIA() }) });
     const j = await r.json();
-    $('recoLLM').textContent = r.ok ? j.content.map(c => c.text || '').join('\n') : 'Error: ' + (j.error?.message || r.status);
+    if (ver !== S.ver) return; // los filtros cambiaron mientras se esperaba la respuesta
+    if (!r.ok) { $('recoLLM').textContent = 'Error: ' + (j.error?.message || r.status); return; }
+    const txt = j.content.map(c => c.text || '').join('\n') + `\n\n— Modelo: ${j.modelo || 'IA'}`;
+    $('recoLLM').innerHTML = txt.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch])).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#+\s*(.*)$/gm, '<b>$1</b>');
   } catch (e) { $('recoLLM').textContent = 'Error de conexión: ' + e.message; }
 }
 
 /* ---------- Eventos ---------- */
 function show(v) { document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); document.querySelectorAll('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + v));
-  const datos = v === 'data' || v === 'about'; $('filters').style.display = datos ? 'none' : ''; $('kpis').style.display = datos ? 'none' : '';
+  const datos = v === 'data' || v === 'about'; $('filters').style.display = datos ? 'none' : ''; $('kpis').style.display = datos ? 'none' : ''; $('chips').style.display = datos ? 'none' : '';
   window.scrollTo(0, 0); }
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => show(b.dataset.v));
 ['fDesde', 'fHasta', ...Object.keys(FSEL)].forEach(id => $(id).addEventListener('change', () => { if (id === 'fCiudad' || id === 'fCategoria') cascade(); refresh(); }));
@@ -517,5 +635,5 @@ $('upProductos').onchange = e => upload(e.target, 'p', 'Productos');
 $('btnDefault').onclick = loadDefault;
 $('btnLocal').onclick = motorLocal;
 $('btnLLM').onclick = consultarLLM;
-try { $('apiKey').value = localStorage.getItem('sfcp_key') || ''; } catch (e) { }
+document.querySelectorAll('.grid').forEach(observeReveal);
 loadDefault();

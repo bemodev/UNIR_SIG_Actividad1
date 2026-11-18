@@ -190,7 +190,7 @@ function buildVentas(rows, prods, clis) {
 /* ---------- Carga de datos ---------- */
 async function fetchBuf(url) { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) throw new Error(url.split('/').pop()); return r.arrayBuffer(); }
 async function loadDefault() {
-  $('loader').style.display = 'flex';
+  $('loader').style.display = 'flex'; S.qaVisible = false; $('upStatus').textContent = '';
   try { const cfg = await fetch('data/config.json', { cache: 'no-store' }); if (cfg.ok) FILES = Object.assign(FILES, await cfg.json()); } catch (e) { }
   const orden = [['p', FILES.productos], ['c', FILES.clientes], ['v', FILES.ventas]];
   const errores = [];
@@ -241,7 +241,7 @@ async function upload(input, slot) {
     if (t === 'v' && !V.list.length) throw new Error(`ninguna fila tiene una fecha válida en la columna Fecha (${fmtN(V.q.sinFecha)} filas descartadas).`);
     if (t === 'p' && !P.map.size) throw new Error('ninguna fila tiene ProductoID.');
     if (t === 'c' && !C.map.size) throw new Error('ninguna fila tiene ClienteID.');
-    S.raw[t] = canon; S.src[t] = `${TIPOS[t]} (${f.name})`;
+    S.raw[t] = canon; S.src[t] = `${TIPOS[t]} (${f.name})`; S.qaVisible = true;
     S.renamed[t] = ev.renombradas; S.reco = S.reco || {}; S.reco[t] = RECO[t].filter(c => !ev.have.has(c));
     rebuild();
     const al = qaAlertas();
@@ -286,6 +286,8 @@ function renderQA() {
     if (ren.length) h += `<p class="status">Columnas reconocidas por sinónimo — ${ren.join(' · ')}</p>`;
   }
   $('qa').innerHTML = h;
+  // Visible solo tras cargar datos nuevos, o si la carga por defecto tuvo errores o advertencias
+  $('qaCard').style.display = (S.qaVisible || (S.loadErrors || []).length || (v.leidas && qaAlertas().length)) ? '' : 'none';
 }
 
 
@@ -391,9 +393,10 @@ const KDEF = [
   ['ncli', 'N.º clientes', fmtN], ['ntx', 'N.º transacciones', fmtN], ['cant', 'Unidades vendidas', fmtN]];
 function animateNum(el, from, to, fmt) {
   if (REDUCED || from === to) { el.textContent = fmt(to); return; }
-  const t0 = performance.now(), dur = 800;
-  const step = t => { const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(from + (to - from) * e); if (p < 1) requestAnimationFrame(step); };
+  const t0 = performance.now(), dur = 800, tok = (el._tok = (el._tok || 0) + 1);
+  const step = () => { if (el._tok !== tok) return; const p = Math.max(0, Math.min(1, (performance.now() - t0) / dur)), e = 1 - Math.pow(1 - p, 3); el.textContent = fmt(from + (to - from) * e); if (p < 1) requestAnimationFrame(step); };
   requestAnimationFrame(step);
+  setTimeout(() => { if (el._tok === tok) el.textContent = fmt(to); }, dur + 150); // respaldo si la pestaña está en segundo plano
 }
 const isoAdd = (iso, d) => new Date(Date.parse(iso + 'T00:00:00Z') + d * 864e5).toISOString().slice(0, 10);
 // Comparación: periodo anterior de igual duración; si no hay datos, 2.ª mitad vs 1.ª mitad del rango elegido
@@ -453,6 +456,12 @@ function renderInsights(R, byMes, bySuc, byProd, bySeg, K) {
   if (sU) cards.push({ ico: '🏆', t: 'Sucursal más rentable', v: sU.k, s: `${fmt$(sU.util)} de utilidad · margen ${fmtP(sU.margen)}`, f: ['fSucursal', sU.k] });
   const pU = [...byProd].sort((a, b) => b.util - a.util)[0];
   if (pU) cards.push({ ico: '🍕', t: 'Producto más rentable', v: pU.k, s: `${fmt$(pU.util)} · ${fmtP(pU.util / (K.util || 1))} de la utilidad total`, f: ['fProducto', pU.k] });
+  const sL = [...bySuc].sort((a, b) => a.util - b.util)[0];
+  if (sL && bySuc.length > 1) cards.push({ ico: '⚠️', t: 'Sucursal con menor desempeño', v: sL.k, cls: 'down',
+    s: `${fmt$(sL.util)} de utilidad · margen ${fmtP(sL.margen)} · ${fmt$(sU.util - sL.util)} menos que la mejor`, f: ['fSucursal', sL.k] });
+  const pL = [...byProd].sort((a, b) => a.util - b.util)[0];
+  if (pL && byProd.length > 1) cards.push({ ico: '🔍', t: 'Producto a revisar', v: pL.k, cls: 'down',
+    s: `Menor utilidad: ${fmt$(pL.util)} · margen ${fmtP(pL.margen)} · ${fmtN(pL.cant)} unidades`, f: ['fProducto', pL.k] });
   const sg = bySeg[0];
   if (sg) cards.push({ ico: '👥', t: 'Segmento líder', v: sg.k, s: `${fmtP(sg.venta / (K.venta || 1))} de las ventas · ticket ${fmt$2(sg.ticket)}`, f: ['fSegmento', sg.k] });
   $('insights').innerHTML = cards.map((c, i) => `<div class="ins" ${c.f ? `data-fid="${c.f[0]}" data-val="${esc(c.f[1])}" title="Clic para filtrar"` : ''}>

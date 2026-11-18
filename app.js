@@ -720,7 +720,33 @@ $('upProductos').onchange = e => upload(e.target, 'p', 'Productos');
 $('btnDefault').onclick = loadDefault;
 $('btnLocal').onclick = motorLocal;
 $('btnLLM').onclick = consultarLLM;
-$('btnPrint').onclick = () => window.print();
+// PDF de una sola página continua, idéntico a la pantalla (sin cortes de paginado)
+const loadScript = src => new Promise((ok, ko) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = ko; document.head.appendChild(s); });
+$('btnPrint').onclick = async () => {
+  const b = $('btnPrint'), txt = b.textContent; b.disabled = true; b.textContent = '⏳ Generando…';
+  try {
+    if (!window.html2canvas) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    if (!window.jspdf) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('in')); // mostrar todo lo que aún no apareció con el scroll
+    Object.values(S.charts).forEach(c => { c.stop(); c.update('none'); c.render(); }); // gráficas terminadas, sin animación a medias
+    await new Promise(r => setTimeout(r, 300));
+    const de = document.documentElement, H = de.scrollHeight, W = de.clientWidth;
+    const canvas = await html2canvas(document.body, {
+      scale: 1.5, useCORS: true, backgroundColor: getComputedStyle(document.body).backgroundColor,
+      width: W, height: H, windowWidth: W, windowHeight: H, x: 0, y: 0, scrollX: 0, scrollY: -window.scrollY,
+      ignoreElements: el => el.id === 'loader' || el.classList?.contains('tools'),
+      // En la copia: sin animaciones (si no, los elementos reaparecen con opacidad 0) y barra de filtros sin "sticky"
+      onclone: d => { const s = d.createElement('style'); s.textContent = '*,*::before,*::after{animation:none!important;transition:none!important}.reveal{opacity:1!important;transform:none!important}.chips{position:static!important}.hero-bg .line{stroke-dashoffset:0!important}'; d.head.appendChild(s); }
+    });
+    const w = canvas.width / 1.5, h = canvas.height / 1.5;
+    const pdf = new window.jspdf.jsPDF({ orientation: w > h ? 'l' : 'p', unit: 'px', format: [w, h], hotfixes: ['px_scaling'], compress: true });
+    pdf.addImage(canvas.toDataURL('image/jpeg', .92), 'JPEG', 0, 0, w, h);
+    const vista = (document.querySelector('.tabs button.on')?.textContent || 'dashboard').trim().toLowerCase().replace(/\s+/g, '_');
+    pdf.save(`SFCrustPizza_${vista}_${new Date().toISOString().slice(0, 10)}.pdf`);
+  } catch (e) {
+    window.print(); // respaldo si no se pudieron cargar las librerías
+  } finally { b.disabled = false; b.textContent = txt; }
+};
 $('btnCSV').onclick = () => { // exporta las ventas con los filtros activos
   const cols = ['id', 'fecha', 'ciudad', 'suc', 'cli', 'seg', 'pid', 'prod', 'cat', 'canal', 'pago', 'cant', 'venta', 'costo', 'util'];
   const head = ['VentaID', 'Fecha', 'Ciudad', 'Sucursal', 'ClienteID', 'Segmento', 'ProductoID', 'Producto', 'Categoria', 'Canal', 'FormaPago', 'Cantidad', 'VentaNeta', 'CostoTotal', 'UtilidadBruta'];

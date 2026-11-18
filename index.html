@@ -30,7 +30,7 @@ select,input,textarea,button{font:inherit}
 .filters select,.filters input{width:100%;padding:6px;border:1px solid var(--line);border-radius:6px;background:#fff}
 .btn{background:var(--acc2);color:#fff;border:0;border-radius:6px;padding:7px 12px;cursor:pointer}
 .btn.sec{background:#eef1f6;color:var(--ink)}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;border-top:3px solid var(--acc)}
 .kpi .l{font-size:11px;color:var(--mute);text-transform:uppercase}
 .kpi .v{font-size:22px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
@@ -55,6 +55,8 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
 @keyframes pop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
 .kpi{position:relative;overflow:hidden}
 .kpi .d{font-size:12px;margin-top:4px;min-height:16px}.kpi .d small{color:var(--mute);font-size:10px}
+.kpi .x{font-size:12px;color:var(--mute);margin-bottom:2px}
+.causa{margin-top:6px;font-size:13px;padding:6px 10px;background:#fff;border:1px dashed var(--line);border-radius:8px}
 .up{color:var(--ok);font-weight:700}.down{color:var(--bad);font-weight:700}
 .spark{width:100%;height:30px;margin-top:6px;display:block}
 .spark polyline{fill:none;stroke:var(--acc);stroke-width:1.8;vector-effect:non-scaling-stroke}
@@ -123,7 +125,7 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
 .reco b{display:block;margin-bottom:3px}
 .chat{white-space:pre-wrap;line-height:1.5}
 #loader{position:fixed;inset:0;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-size:16px;z-index:9}
-@media(max-width:900px){.insights{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.insights,.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.insights{grid-template-columns:1fr}.grid{grid-template-columns:1fr}main{padding:10px}}
 </style>
 </head>
@@ -210,6 +212,8 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
   </div>
 
   <div class="view" id="v-suc">
+    <h3 class="sec">Nivel de servicio de delivery</h3>
+    <div class="kpis" id="sucKpis"></div>
     <div class="grid">
       <div class="card"><h3>Ventas vs. margen por sucursal</h3><div class="ch"><canvas id="cSucMargen"></canvas></div></div>
       <div class="card"><h3>Tiempo promedio de entrega y preparación (min)</h3><div class="ch"><canvas id="cSucTiempo"></canvas></div></div>
@@ -309,6 +313,10 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
           <dt>Variación ▲▼</dt><dd>Cambio frente al periodo anterior de igual duración (o, si no hay datos previos, 2.ª mitad vs 1.ª mitad del periodo). Verde = mejora, rojo = empeora.</dd>
           <dt>pp (puntos porcentuales)</dt><dd>Diferencia absoluta entre dos porcentajes: un margen que pasa de 60 % a 59 % baja 1 pp.</dd>
           <dt>Tendencia de ventas</dt><dd>Ventas de los últimos 12 meses frente a los 12 meses anteriores.</dd>
+          <dt>Transacciones vs ticket (causa de la tendencia)</dt><dd>Ventas = transacciones × ticket promedio. Indica si las ventas cambian porque hay más o menos compras, o porque cada compra es mayor o menor.</dd>
+          <dt>Descuentos otorgados</dt><dd>Monto cedido en descuentos: precio de lista − venta neta. Junto a él, el % de las ventas que tuvo algún descuento. Que suba es negativo para el margen (se muestra en rojo).</dd>
+          <dt>Entrega media (delivery)</dt><dd>Tiempo promedio de entrega de los pedidos a domicilio, en minutos.</dd>
+          <dt>Pedidos de más de 35 min</dt><dd>% de pedidos a domicilio que superan 35 minutos. Umbral de referencia definido por el equipo; el caso no fija un objetivo de entrega.</dd>
           <dt>Mini gráfica (sparkline)</dt><dd>Línea pequeña bajo cada KPI con su evolución mensual.</dd>
         </dl>
         <dl>
@@ -348,6 +356,6 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
     </div>
   </div>
 </main>
-<script src="app.js?v=22"></script>
+<script src="app.js?v=24"></script>
 </body>
 </html>

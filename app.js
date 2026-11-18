@@ -380,12 +380,13 @@ function group(rows, key) {
   const m = new Map();
   for (const r of rows) {
     const k = typeof key === 'function' ? key(r) : r[key];
-    let g = m.get(k); if (!g) m.set(k, g = { k, venta: 0, util: 0, costo: 0, cant: 0, tx: new Set(), cli: new Set(), tEnt: 0, nEnt: 0, tPrep: 0, desc: 0 });
-    g.venta += r.venta; g.util += r.util; g.costo += r.costo; g.cant += r.cant; g.tx.add(r.id); g.cli.add(r.cli);
-    if (r.tEnt > 0) { g.tEnt += r.tEnt; g.nEnt++; } g.tPrep += r.tPrep; g.desc += r.desc;
+    let g = m.get(k); if (!g) m.set(k, g = { k, venta: 0, util: 0, costo: 0, cant: 0, tx: new Set(), cli: new Set(), tEnt: 0, nEnt: 0, tPrep: 0, desc: 0, descM: 0, nDesc: 0, nLin: 0, nTarde: 0 });
+    g.venta += r.venta; g.util += r.util; g.costo += r.costo; g.cant += r.cant; g.tx.add(r.id); g.cli.add(r.cli); g.nLin++;
+    if (r.tEnt > 0) { g.tEnt += r.tEnt; g.nEnt++; if (r.tEnt > UMBRAL_ENTREGA) g.nTarde++; } g.tPrep += r.tPrep; g.desc += r.desc;
+    if (r.desc > 0 && r.desc < 100) { g.descM += r.venta / (1 - r.desc / 100) - r.venta; g.nDesc++; } // monto cedido = precio de lista − venta neta
   }
   return [...m.values()].map(g => ({ ...g, ntx: g.tx.size, ncli: g.cli.size, margen: g.venta ? g.util / g.venta : 0, ticket: g.tx.size ? g.venta / g.tx.size : 0,
-    entrega: g.nEnt ? g.tEnt / g.nEnt : 0, prep: g.ntx ? g.tPrep / g.ntx : 0 }));
+    entrega: g.nEnt ? g.tEnt / g.nEnt : 0, prep: g.ntx ? g.tPrep / g.ntx : 0, pctDesc: g.nLin ? g.nDesc / g.nLin : 0, pctTarde: g.nEnt ? g.nTarde / g.nEnt : 0 }));
 }
 function kpis(rows) {
   const g = group(rows, () => 'all')[0] || { venta: 0, util: 0, margen: 0, ticket: 0, ncli: 0, ntx: 0, cant: 0 };
@@ -431,7 +432,9 @@ const KDEF = [
   ['ticket', 'Ticket promedio', fmt$2, 'Ventas totales ÷ N.º de transacciones'],
   ['ncli', 'N.º clientes', fmtN, 'Clientes distintos (ClienteID) con al menos una compra en el periodo'],
   ['ntx', 'N.º transacciones', fmtN, 'Ventas distintas (VentaID) en el periodo'],
-  ['cant', 'Unidades vendidas', fmtN, 'Suma de Cantidad vendida']];
+  ['cant', 'Unidades vendidas', fmtN, 'Suma de Cantidad vendida'],
+  ['descM', 'Descuentos otorgados', fmt$, 'Monto cedido por descuentos: precio de lista − venta neta. Más descuento = menos margen', true]];
+const UMBRAL_ENTREGA = 35; // minutos; referencia definida por el equipo (el caso no fija un objetivo de entrega)
 function animateNum(el, from, to, fmt) {
   if (REDUCED || from === to) { el.textContent = fmt(to); return; }
   const t0 = performance.now(), dur = 800, tok = (el._tok = (el._tok || 0) + 1);
@@ -466,16 +469,17 @@ function renderKPIs(K, byMes) {
   }
   S.kPrev = S.kPrev || {};
   const cmp = comparacion();
-  for (const [k, , fmt] of KDEF) {
+  for (const [k, , fmt, , inv] of KDEF) {
     const box = $('kpis').querySelector(`[data-k="${k}"]`), val = K[k] || 0;
     animateNum(box.querySelector('.v'), S.kPrev[k] ?? 0, val, fmt); S.kPrev[k] = val;
     let d = '';
     if (cmp) {
-      const c = cmp.cur[k] || 0, p = cmp.prev[k] || 0;
-      if (k === 'margen') { const pp = (c - p) * 100; d = `<span class="${pp >= 0 ? 'up' : 'down'}">${pp >= 0 ? '▲' : '▼'} ${Math.abs(pp).toFixed(1)} pp</span>`; }
-      else if (p) { const r = (c - p) / p; d = `<span class="${r >= 0 ? 'up' : 'down'}">${r >= 0 ? '▲' : '▼'} ${Math.abs(r * 100).toFixed(1)}%</span>`; }
+      const c = cmp.cur[k] || 0, p = cmp.prev[k] || 0, cls = up => (up !== !!inv) ? 'up' : 'down'; // inv: subir es malo (descuentos)
+      if (k === 'margen') { const pp = (c - p) * 100; d = `<span class="${cls(pp >= 0)}">${pp >= 0 ? '▲' : '▼'} ${Math.abs(pp).toFixed(1)} pp</span>`; }
+      else if (p) { const r = (c - p) / p; d = `<span class="${cls(r >= 0)}">${r >= 0 ? '▲' : '▼'} ${Math.abs(r * 100).toFixed(1)}%</span>`; }
       if (d) d += ` <small>${cmp.label}</small>`;
     }
+    if (k === 'descM') d = `<div class="x">${fmtP(K.pctDesc || 0)} de las ventas con descuento</div>` + d;
     box.querySelector('.d').innerHTML = d;
     box.querySelector('.sp').innerHTML = sparkSVG(byMes.map(m => m[k] || 0));
   }
@@ -490,9 +494,15 @@ function renderInsights(R, byMes, bySuc, byProd, bySeg, K) {
     const ult = byMes.slice(-n).reduce((s, d) => s + d.venta, 0), ant = byMes.slice(-2 * n, -n).reduce((s, d) => s + d.venta, 0);
     if (ant) {
       const r = (ult - ant) / ant;
-      trend = `<div class="ins wide ${r >= 0 ? 'good' : 'bad'}"><div class="ico">${r >= 0 ? '📈' : '📉'}</div><div><div class="l">Tendencia de ventas</div>
+      // Descomposición: Ventas = Transacciones × Ticket → ¿la variación viene de cuántas compras o de cuánto se gasta por compra?
+      const txU = byMes.slice(-n).reduce((s, d) => s + d.ntx, 0), txA = byMes.slice(-2 * n, -n).reduce((s, d) => s + d.ntx, 0);
+      const rTx = txA ? (txU - txA) / txA : 0, rTk = txA && txU ? (ult / txU - ant / txA) / (ant / txA) : 0;
+      const sg = v => (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1) + '%';
+      const motor = Math.abs(rTx) >= Math.abs(rTk) ? 'del número de compras (transacciones)' : 'del gasto por compra (ticket promedio)';
+      const causa = `<div class="causa"><b>Causa:</b> la variación viene principalmente ${motor}. Transacciones <span class="${rTx >= 0 ? 'up' : 'down'}">${sg(rTx)}</span> · Ticket promedio <span class="${rTk >= 0 ? 'up' : 'down'}">${sg(rTk)}</span></div>`;
+      trend =`<div class="ins wide ${r >= 0 ? 'good' : 'bad'}"><div class="ico">${r >= 0 ? '📈' : '📉'}</div><div><div class="l">Tendencia de ventas</div>
         <div class="v ${r >= 0 ? 'up' : 'down'}">${r >= 0 ? '+' : '−'}${Math.abs(r * 100).toFixed(1)}%</div>
-        <div class="s">Últimos ${n} meses (${fmt$(ult)}) vs ${n} meses anteriores (${fmt$(ant)})</div></div></div>`;
+        <div class="s">Últimos ${n} meses (${fmt$(ult)}) vs ${n} meses anteriores (${fmt$(ant)})</div>${causa}</div></div>`;
     }
   }
   const seg = segInfo(), byU = a => [...a].sort((x, y) => y.util - x.util), byV = a => [...a].sort((x, y) => y.venta - x.venta);
@@ -620,7 +630,16 @@ function refresh() {
     { h: 'Sucursal', v: d => d.k }, { h: 'Ventas', v: d => d.venta, f: d => fmt$(d.venta) }, { h: 'Utilidad', v: d => d.util, f: d => fmt$(d.util) },
     { h: 'Margen', v: d => d.margen, f: d => mTag(d.margen) }, { h: 'Transacciones', v: d => d.ntx, f: d => fmtN(d.ntx) },
     { h: 'Ticket', v: d => d.ticket, f: d => fmt$2(d.ticket) }, { h: 'Clientes', v: d => d.ncli, f: d => fmtN(d.ncli) },
-    { h: 'Entrega min', v: d => d.entrega, f: d => d.entrega.toFixed(1) }, { h: 'Prep. min', v: d => d.prep, f: d => d.prep.toFixed(1) }], bySuc);
+    { h: 'Entrega min', v: d => d.entrega, f: d => d.entrega.toFixed(1) },
+    { h: `% > ${UMBRAL_ENTREGA} min`, v: d => d.pctTarde, f: d => `<span class="tag ${d.pctTarde <= .25 ? 'g' : d.pctTarde <= .4 ? 'y' : 'r'}">${fmtP(d.pctTarde)}</span>` },
+    { h: 'Prep. min', v: d => d.prep, f: d => d.prep.toFixed(1) }], bySuc);
+  // Servicio de delivery (solo pedidos con tiempo de entrega)
+  const peor = [...bySuc].filter(d => d.nEnt).sort((a, b) => b.pctTarde - a.pctTarde)[0];
+  $('sucKpis').innerHTML = [
+    ['Entrega media (delivery)', K.nEnt ? K.entrega.toFixed(1) + ' min' : '—', `${fmtN(K.nEnt || 0)} pedidos a domicilio en el periodo`, 'Promedio de TiempoEntregaMin de los pedidos Delivery'],
+    [`Pedidos de más de ${UMBRAL_ENTREGA} min`, K.nEnt ? fmtP(K.pctTarde) : '—', peor ? `Mayor proporción: ${esc(peor.k)} (${fmtP(peor.pctTarde)})` : '', `Umbral de referencia de ${UMBRAL_ENTREGA} min definido por el equipo; el caso no fija un objetivo de entrega`]
+  ].map(([l, v, s, tip]) => `<div class="kpi" title="${tip}"><div class="l">${l}<span class="i">ⓘ</span></div><div class="v">${v}</div><div class="d">${s}</div></div>`).join('') +
+    `<p class="status" style="grid-column:1/-1;margin:0">Umbral de ${UMBRAL_ENTREGA} min: referencia definida por el equipo para medir el nivel de servicio (el caso no fija un objetivo).</p>`;
 
   // Clientes
   chart('cSegTicket', { type: 'bar', data: { labels: bySeg.map(d => d.k), datasets: [
@@ -658,9 +677,11 @@ function contextoIA() {
   const filtros = Object.fromEntries([['desde', $('fDesde').value], ['hasta', $('fHasta').value], ...Object.entries(FSEL).map(([id, k]) => [k, $(id).value || 'Todos'])]);
   return {
     empresa: 'San Francisco Crust Pizza', filtros,
-    kpis: { ventas: Math.round(s.K.venta), utilidad: Math.round(s.K.util), margen_pct: +(s.K.margen * 100).toFixed(1), ticket: +s.K.ticket.toFixed(2), clientes: s.K.ncli, transacciones: s.K.ntx },
+    kpis: { ventas: Math.round(s.K.venta), utilidad: Math.round(s.K.util), margen_pct: +(s.K.margen * 100).toFixed(1), ticket: +s.K.ticket.toFixed(2), clientes: s.K.ncli, transacciones: s.K.ntx,
+      descuentos_otorgados: Math.round(s.K.descM || 0), pct_ventas_con_descuento: +((s.K.pctDesc || 0) * 100).toFixed(1),
+      entrega_media_min: +(s.K.entrega || 0).toFixed(1), [`pct_pedidos_mas_${UMBRAL_ENTREGA}_min`]: +((s.K.pctTarde || 0) * 100).toFixed(1) },
     tendencia_mensual: s.byMes.map(d => ({ mes: d.k, ventas: Math.round(d.venta), margen_pct: +(d.margen * 100).toFixed(1) })),
-    ciudades: s.byCiudad.map(pick), sucursales: s.bySuc.map(d => ({ ...pick(d), entrega_min: +d.entrega.toFixed(1), prep_min: +d.prep.toFixed(1) })),
+    ciudades: s.byCiudad.map(pick), sucursales: s.bySuc.map(d => ({ ...pick(d), entrega_min: +d.entrega.toFixed(1), pct_entregas_tardias: +(d.pctTarde * 100).toFixed(1), prep_min: +d.prep.toFixed(1) })),
     segmentos: s.bySeg.map(d => ({ ...pick(d), pct_activos: +((s.segCli[d.k]?.act || 0) * 100).toFixed(1), nps: +(s.segCli[d.k]?.nps || 0).toFixed(1), motivo_perdida_principal: s.segCli[d.k]?.motivo })),
     categorias: s.byCat.map(pick), canales: s.byCanal.map(pick),
     top_productos_utilidad: top(s.byProd, 8, (a, b) => b.util - a.util).map(pick),

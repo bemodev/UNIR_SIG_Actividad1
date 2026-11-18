@@ -113,11 +113,22 @@ function detectarTipo(rows) {
 const num = v => {
   if (typeof v === 'number') return v;
   let s = String(v ?? '').replace(/[$\s]/g, '');
-  if (/,\d{1,2}$/.test(s) && s.includes('.')) s = s.replace(/\./g, '').replace(',', '.'); // 1.234,56
+  if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');                        // 1.234 (miles con punto)
+  else if (/,\d{1,2}$/.test(s) && s.includes('.')) s = s.replace(/\./g, '').replace(',', '.'); // 1.234,56
   else if (/^\d+,\d{1,2}$/.test(s)) s = s.replace(',', '.');                              // 12,50
   else s = s.replace(/,/g, '');                                                           // 1,234.56
   const n = parseFloat(s); return isNaN(n) ? 0 : n;
 };
+// Orden de fechas texto D/M/A vs M/D/A detectado por archivo: por defecto D/M/A (España y Ecuador)
+function ordenFechas(rows) {
+  let dm = 0, md = 0;
+  for (const r of rows) {
+    const m = typeof r.fecha === 'string' && r.fecha.trim().match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-]\d{4}/);
+    if (m) { if (+m[1] > 12) dm++; else if (+m[2] > 12) md++; }
+  }
+  return md > dm ? 'md' : 'dm';
+}
+let ORDEN = 'dm';
 function toISO(v) {
   let d = null;
   if (v instanceof Date) d = new Date(Date.UTC(v.getFullYear(), v.getMonth(), v.getDate()));
@@ -127,7 +138,8 @@ function toISO(v) {
     let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
     if (m) d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
     else if ((m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/))) {
-      let a = +m[1], b = +m[2]; const [mes, dia] = a > 12 ? [b, a] : [a, b]; // d/m/a si el primero > 12
+      let a = +m[1], b = +m[2];
+      const [mes, dia] = a > 12 ? [b, a] : b > 12 ? [a, b] : ORDEN === 'md' ? [a, b] : [b, a];
       d = new Date(Date.UTC(+m[3], mes - 1, dia));
     } else { const x = new Date(s); if (!isNaN(x)) d = x; }
   }
@@ -159,6 +171,7 @@ function buildClientes(rows) {
 function buildVentas(rows, prods, clis) {
   const out = [], ids = new Set(), sinCliIds = new Set(), sinProdIds = new Set();
   const q = { leidas: rows.length, validas: 0, sinFecha: 0, montoCero: 0, negativos: 0, dupId: 0, sinCli: 0, sinProd: 0, sinSuc: 0 };
+  ORDEN = ordenFechas(rows); q.ordenFechas = ORDEN;
   rows.forEach((r, i) => {
     const fecha = toISO(r.fecha); if (!fecha) { q.sinFecha++; return; }
     const pid = String(r.productoid ?? '').trim(), cid = String(r.clienteid ?? '').trim();
@@ -188,10 +201,10 @@ function buildVentas(rows, prods, clis) {
 }
 
 /* ---------- Carga de datos ---------- */
-async function fetchBuf(url) { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) throw new Error(url.split('/').pop()); return r.arrayBuffer(); }
+async function fetchBuf(url) { const r = await fetch(url, { cache: 'no-cache' }); if (!r.ok) throw new Error(url.split('/').pop()); return r.arrayBuffer(); }
 async function loadDefault() {
   $('loader').style.display = 'flex'; S.qaVisible = false; $('upStatus').textContent = '';
-  try { const cfg = await fetch('data/config.json', { cache: 'no-store' }); if (cfg.ok) FILES = Object.assign(FILES, await cfg.json()); } catch (e) { }
+  try { const cfg = await fetch('data/config.json', { cache: 'no-cache' }); if (cfg.ok) FILES = Object.assign(FILES, await cfg.json()); } catch (e) { }
   const orden = [['p', FILES.productos], ['c', FILES.clientes], ['v', FILES.ventas]];
   const errores = [];
   const raw = {}, info = {};
@@ -295,7 +308,7 @@ function renderQA() {
 const FSEL = { fCiudad: 'ciudad', fSucursal: 'suc', fSegmento: 'seg', fCategoria: 'cat', fProducto: 'prod', fCanal: 'canal' };
 function fillSelect(id, vals) {
   const cur = $(id).value;
-  $(id).innerHTML = '<option value="">Todos</option>' + [...vals].sort().map(v => `<option>${v}</option>`).join('');
+  $(id).innerHTML = '<option value="">Todos</option>' + [...vals].sort().map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
   if ([...vals].includes(cur)) $(id).value = cur;
 }
 function initFilters() {
@@ -314,7 +327,14 @@ function filtrar(d1, d2) {
   const sel = selActivos();
   return S.ventas.filter(v => (!d1 || v.fecha >= d1) && (!d2 || v.fecha <= d2) && sel.every(([k, val]) => v[k] === val));
 }
-function applyFilters() { S.rows = filtrar($('fDesde').value, $('fHasta').value); }
+function applyFilters() {
+  S.aviso = '';
+  if ($('fDesde').value && $('fHasta').value && $('fDesde').value > $('fHasta').value) { // fechas invertidas: se corrigen solas
+    const a = $('fDesde').value; $('fDesde').value = $('fHasta').value; $('fHasta').value = a;
+    S.aviso = '↔ “Fecha desde” era posterior a “Fecha hasta”; se intercambiaron automáticamente.';
+  }
+  S.rows = filtrar($('fDesde').value, $('fHasta').value);
+}
 
 /* ---------- Filtro cruzado (clic en gráficas) y chips de filtros activos ---------- */
 const CHART_FILTER = { cTopProd: 'fProducto', cProdUtil: 'fProducto', cMatriz: 'fProducto', cCiudad: 'fCiudad', cSucursal: 'fSucursal',
@@ -343,6 +363,9 @@ function renderChips() {
     : '<span class="hint">💡 Haga clic en una barra o sector de las gráficas para filtrar todo el dashboard por ese valor. · <a href="#" class="glink">📖 Glosario de indicadores</a></span>';
   const gl = $('chips').querySelector('.glink');
   if (gl) gl.onclick = e => { e.preventDefault(); show('about'); setTimeout(() => $('glosario').scrollIntoView({ behavior: 'smooth' }), 50); };
+  if (S.aviso) $('chips').insertAdjacentHTML('afterbegin', `<span class="notice">${S.aviso}</span>`);
+  if (S.ventas.length && !S.rows.length) $('chips').insertAdjacentHTML('afterbegin',
+    '<span class="notice bad">⚠ Sin datos para los filtros seleccionados: los indicadores y gráficas quedan vacíos. <button data-f="all">Limpiar filtros</button></span>');
   $('chips').querySelectorAll('[data-f]').forEach(b => b.onclick = () => {
     const id = b.dataset.f;
     if (id === 'all') return $('fReset').click();
@@ -542,7 +565,7 @@ function table(el, cols, data) {
   let sortK = null, asc = false;
   const draw = () => {
     const d = sortK == null ? data : [...data].sort((a, b) => { const x = cols[sortK].v(a), y = cols[sortK].v(b); return (x > y ? 1 : x < y ? -1 : 0) * (asc ? 1 : -1); });
-    $(el).innerHTML = `<table><thead><tr>${cols.map((c, i) => `<th data-i="${i}">${c.h}</th>`).join('')}</tr></thead><tbody>${d.map(r => `<tr>${cols.map(c => `<td>${c.f ? c.f(r) : c.v(r)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    $(el).innerHTML = `<table><thead><tr>${cols.map((c, i) => `<th data-i="${i}">${c.h}</th>`).join('')}</tr></thead><tbody>${d.map(r => `<tr>${cols.map(c => `<td>${c.f ? c.f(r) : esc(c.v(r))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
     $(el).querySelectorAll('th').forEach(th => th.onclick = () => { const i = +th.dataset.i; asc = sortK === i ? !asc : false; sortK = i; draw(); });
   };
   draw();
@@ -649,22 +672,22 @@ function motorLocal() {
   const s = S.summary; if (!s || !S.rows.length) { $('recoLocal').innerHTML = '<p>Sin datos con los filtros actuales.</p>'; return; }
   const R = [], K = s.K, sucS = [...s.bySuc].sort((a, b) => b.util - a.util);
   const best = sucS[0], worst = sucS[sucS.length - 1];
-  R.push(['Sucursales: replicar mejores prácticas', `${best.k} lidera con ${fmt$(best.util)} de utilidad (margen ${fmtP(best.margen)}, ticket ${fmt$2(best.ticket)}), mientras ${worst.k} genera ${fmt$(worst.util)} (margen ${fmtP(worst.margen)}). Brecha: ${fmt$(best.util - worst.util)}. Recomendación: auditar operación, surtido y promociones de ${worst.k} y transferir prácticas de ${best.k}.`]);
+  R.push(['Sucursales: replicar mejores prácticas', `${esc(best.k)} lidera con ${fmt$(best.util)} de utilidad (margen ${fmtP(best.margen)}, ticket ${fmt$2(best.ticket)}), mientras ${esc(worst.k)} genera ${fmt$(worst.util)} (margen ${fmtP(worst.margen)}). Brecha: ${fmt$(best.util - worst.util)}. Recomendación: auditar operación, surtido y promociones de ${esc(worst.k)} y transferir prácticas de ${esc(best.k)}.`]);
   const prodU = [...s.byProd].sort((a, b) => b.util - a.util), pTop = prodU.slice(0, 3), pLow = prodU.slice(-3);
-  R.push(['Productos estrella', `${pTop.map(p => `${p.k} (${fmt$(p.util)}, ${fmtP(p.margen)})`).join('; ')} concentran la mayor utilidad. Priorizarlos en menú, combos y publicidad digital.`]);
+  R.push(['Productos estrella', `${pTop.map(p => `${esc(p.k)} (${fmt$(p.util)}, ${fmtP(p.margen)})`).join('; ')} concentran la mayor utilidad. Priorizarlos en menú, combos y publicidad digital.`]);
   const lowM = [...s.byProd].sort((a, b) => a.margen - b.margen).slice(0, 3);
-  R.push(['Productos a revisar', `Menor utilidad: ${pLow.map(p => `${p.k} (${fmt$(p.util)})`).join('; ')}. Menor margen: ${lowM.map(p => `${p.k} (${fmtP(p.margen)})`).join('; ')}. Evaluar ajuste de precio, renegociar costos o retirar del menú.`]);
+  R.push(['Productos a revisar', `Menor utilidad: ${pLow.map(p => `${esc(p.k)} (${fmt$(p.util)})`).join('; ')}. Menor margen: ${lowM.map(p => `${esc(p.k)} (${fmtP(p.margen)})`).join('; ')}. Evaluar ajuste de precio, renegociar costos o retirar del menú.`]);
   const seg = s.bySeg.map(d => ({ ...d, vpc: d.venta / (d.ncli || 1), info: s.segCli[d.k] || {} }));
   const sOpp = [...seg].sort((a, b) => b.ticket - a.ticket)[0], sBig = [...seg].sort((a, b) => b.venta - a.venta)[0];
-  R.push(['Segmento con mayor oportunidad', `${sBig.k} es el segmento de mayor venta (${fmtP(sBig.venta / K.venta)} del total). ${sOpp.k} tiene el ticket más alto (${fmt$2(sOpp.ticket)}) con ${fmtP(sOpp.info.act || 0)} de clientes activos${sOpp.info.motivo ? '; su principal motivo de pérdida es “' + sOpp.info.motivo + '”' : ''}. Lanzar programa de fidelización y reactivación dirigido.`]);
+  R.push(['Segmento con mayor oportunidad', `${esc(sBig.k)} es el segmento de mayor venta (${fmtP(sBig.venta / K.venta)} del total). ${esc(sOpp.k)} tiene el ticket más alto (${fmt$2(sOpp.ticket)}) con ${fmtP(sOpp.info.act || 0)} de clientes activos${sOpp.info.motivo ? '; su principal motivo de pérdida es “' + esc(sOpp.info.motivo) + '”' : ''}. Lanzar programa de fidelización y reactivación dirigido.`]);
   const canal = [...s.byCanal].sort((a, b) => b.margen - a.margen);
-  R.push(['Canales de venta', canal.map(c => `${c.k}: ${fmt$(c.venta)} (margen ${fmtP(c.margen)}, ticket ${fmt$2(c.ticket)})`).join('; ') + `. Incentivar ${canal[0].k} por su mayor margen.`]);
+  R.push(['Canales de venta', canal.map(c => `${esc(c.k)}: ${fmt$(c.venta)} (margen ${fmtP(c.margen)}, ticket ${fmt$2(c.ticket)})`).join('; ') + `. Incentivar ${esc(canal[0].k)} por su mayor margen.`]);
   if (s.byMes.length >= 6) {
     const h = Math.floor(s.byMes.length / 2), a = s.byMes.slice(0, h).reduce((x, d) => x + d.venta, 0), b = s.byMes.slice(-h).reduce((x, d) => x + d.venta, 0);
     const mx = [...s.byMes].sort((x, y) => y.venta - x.venta)[0], mn = [...s.byMes].sort((x, y) => x.venta - y.venta)[0];
-    R.push(['Tendencia', `Ventas del último periodo vs. primero: ${b >= a ? '+' : ''}${fmtP((b - a) / a)}. Mejor mes ${mx.k} (${fmt$(mx.venta)}), más bajo ${mn.k} (${fmt$(mn.venta)}). Planificar campañas en meses valle e inventario/personal en picos.`]);
+    R.push(['Tendencia', `Ventas del último periodo vs. primero: ${b >= a ? '+' : ''}${fmtP((b - a) / a)}. Mejor mes ${esc(mx.k)} (${fmt$(mx.venta)}), más bajo ${esc(mn.k)} (${fmt$(mn.venta)}). Planificar campañas en meses valle e inventario/personal en picos.`]);
   }
-  const ciu = s.byCiudad; R.push(['Ciudades', `${ciu[0].k} aporta ${fmtP(ciu[0].venta / K.venta)} de las ventas; ${ciu[ciu.length - 1].k} solo ${fmtP(ciu[ciu.length - 1].venta / K.venta)}. Evaluar expansión en la plaza líder y plan de crecimiento local en la rezagada.`]);
+  const ciu = s.byCiudad; R.push(['Ciudades', `${esc(ciu[0].k)} aporta ${fmtP(ciu[0].venta / K.venta)} de las ventas; ${esc(ciu[ciu.length - 1].k)} solo ${fmtP(ciu[ciu.length - 1].venta / K.venta)}. Evaluar expansión en la plaza líder y plan de crecimiento local en la rezagada.`]);
   $('recoLocal').innerHTML = R.map(([t, d]) => `<div class="reco"><b>${t}</b>${d}</div>`).join('') + '<p class="status">Generado por reglas analíticas sobre los datos filtrados. Validar críticamente antes de usar.</p>';
 }
 // URL del Cloudflare Worker que ejecuta el modelo de IA (Workers AI, sin costo)
@@ -684,7 +707,7 @@ async function consultarLLM() {
 }
 
 /* ---------- Eventos ---------- */
-function show(v) { document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); document.querySelectorAll('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + v));
+function show(v) { document.querySelectorAll('.tabs button').forEach(b => { b.classList.toggle('on', b.dataset.v === v); b.setAttribute('aria-selected', b.dataset.v === v); }); document.querySelectorAll('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + v));
   const datos = v === 'data' || v === 'about' || v === 'home';
   if (v === 'home') setTimeout(animHome, 0); $('filters').style.display = datos ? 'none' : ''; $('kpis').style.display = datos ? 'none' : ''; $('chips').style.display = datos ? 'none' : '';
   window.scrollTo(0, 0); }
@@ -707,6 +730,10 @@ $('btnCSV').onclick = () => { // exporta las ventas con los filtros activos
   a.download = `ventas_filtradas_${new Date().toISOString().slice(0, 10)}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 };
 document.querySelectorAll('.grid').forEach(observeReveal);
+// Accesibilidad: descripción de cada gráfica para lectores de pantalla y pestañas con rol
+document.querySelectorAll('.card').forEach(c => { const cv = c.querySelector('canvas'), h = c.querySelector('h3'); if (cv && h) { cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', 'Gráfica: ' + h.textContent); } });
+document.querySelector('.tabs').setAttribute('role', 'tablist');
+document.querySelectorAll('.tabs button').forEach(b => { b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', b.classList.contains('on')); });
 document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => show(b.dataset.go));
 // Primera visita: abre la portada; las siguientes, directo al Dashboard (preferencia guardada solo en este navegador)
 let visto = false; try { visto = localStorage.getItem('sfcp_visto') === '1'; localStorage.setItem('sfcp_visto', '1'); } catch (e) { }

@@ -291,7 +291,9 @@ async function consultarLLM() {
 }
 
 /* ---------- Eventos ---------- */
-function show(v) { document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); document.querySelectorAll('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + v)); }
+function show(v) { document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); document.querySelectorAll('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + v));
+  const datos = v === 'data'; $('filters').style.display = datos ? 'none' : ''; $('kpis').style.display = datos ? 'none' : '';
+  window.scrollTo(0, 0); }
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => show(b.dataset.v));
 ['fDesde', 'fHasta', ...Object.keys(FSEL)].forEach(id => $(id).addEventListener('change', () => { if (id === 'fCiudad' || id === 'fCategoria') cascade(); refresh(); }));
 $('fReset').onclick = () => { initFilters(); Object.keys(FSEL).forEach(id => $(id).value = ''); refresh(); };

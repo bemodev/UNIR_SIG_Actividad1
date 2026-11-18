@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SF Crust Pizza BI</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--ink:#1d2433;--mute:#667085;--line:#e4e7ec;--acc:#c0392b;--acc2:#2c7be5;--ok:#1a9e5c;--warn:#d98a00}
+*{box-sizing:border-box}
+body{margin:0;font-family:Segoe UI,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+header{background:#1d2433;color:#fff;padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+header h1{font-size:18px;margin:0}header small{color:#aab2c5}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tabs button{background:transparent;color:#cfd5e3;border:1px solid #3a4258;border-radius:6px;padding:6px 12px;cursor:pointer}
+.tabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+main{padding:16px;max-width:1500px;margin:auto}
+.filters{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end;margin-bottom:14px}
+.filters label{font-size:11px;color:var(--mute);text-transform:uppercase;display:block;margin-bottom:3px}
+select,input,textarea,button{font:inherit}
+.filters select,.filters input{width:100%;padding:6px;border:1px solid var(--line);border-radius:6px;background:#fff}
+.btn{background:var(--acc2);color:#fff;border:0;border-radius:6px;padding:7px 12px;cursor:pointer}
+.btn.sec{background:#eef1f6;color:var(--ink)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;border-top:3px solid var(--acc)}
+.kpi .l{font-size:11px;color:var(--mute);text-transform:uppercase}
+.kpi .v{font-size:22px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.card h3{margin:0 0 10px;font-size:14px}
+.ch{position:relative;height:290px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;position:sticky;top:0;background:#fff}
+.tw{max-height:420px;overflow:auto}
+.tag{padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600}
+.g{background:#e3f6ec;color:var(--ok)}.r{background:#fde8e6;color:var(--acc)}.y{background:#fff4dc;color:var(--warn)}
+.view{display:none}.view.on{display:block}
+.status{font-size:12px;color:var(--mute);margin:6px 0}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:18px;text-align:center;margin:8px 0}
+.reco{border-left:4px solid var(--acc2);background:#f7f9fc;padding:10px 12px;margin:8px 0;border-radius:6px}
+.reco b{display:block;margin-bottom:3px}
+.chat{white-space:pre-wrap;line-height:1.5}
+#loader{position:fixed;inset:0;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-size:16px;z-index:9}
+@media(max-width:600px){.grid{grid-template-columns:1fr}main{padding:10px}}
+</style>
+</head>
+<body>
+<div id="loader">Cargando bases de datos…</div>
+<header>
+  <div><h1>🍕 San Francisco Crust Pizza · Sistema Inteligente de Apoyo a Decisiones</h1><small id="dsinfo"></small></div>
+  <nav class="tabs">
+    <button data-v="dash" class="on">Dashboard</button>
+    <button data-v="prod">Productos</button>
+    <button data-v="suc">Sucursales</button>
+    <button data-v="cli">Clientes</button>
+    <button data-v="ia">Asistente IA</button>
+    <button data-v="data">Cargar datos</button>
+  </nav>
+</header>
+<main>
+  <section class="filters" id="filters">
+    <div><label>Fecha desde</label><input type="date" id="fDesde"></div>
+    <div><label>Fecha hasta</label><input type="date" id="fHasta"></div>
+    <div><label>Ciudad</label><select id="fCiudad"></select></div>
+    <div><label>Sucursal</label><select id="fSucursal"></select></div>
+    <div><label>Segmento</label><select id="fSegmento"></select></div>
+    <div><label>Categoría</label><select id="fCategoria"></select></div>
+    <div><label>Producto</label><select id="fProducto"></select></div>
+    <div><label>Canal</label><select id="fCanal"></select></div>
+    <div><button class="btn sec" id="fReset" style="width:100%">Limpiar filtros</button></div>
+  </section>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="view on" id="v-dash">
+    <div class="grid">
+      <div class="card" style="grid-column:1/-1"><h3>Evolución mensual de ventas y utilidad bruta</h3><div class="ch"><canvas id="cTrend"></canvas></div></div>
+      <div class="card"><h3>Top 10 productos más vendidos (unidades)</h3><div class="ch"><canvas id="cTopProd"></canvas></div></div>
+      <div class="card"><h3>Ventas por ciudad</h3><div class="ch"><canvas id="cCiudad"></canvas></div></div>
+      <div class="card"><h3>Ventas por sucursal</h3><div class="ch"><canvas id="cSucursal"></canvas></div></div>
+      <div class="card"><h3>Ventas por segmento de cliente</h3><div class="ch"><canvas id="cSegmento"></canvas></div></div>
+      <div class="card"><h3>Ventas por categoría</h3><div class="ch"><canvas id="cCategoria"></canvas></div></div>
+      <div class="card"><h3>Ventas por canal</h3><div class="ch"><canvas id="cCanal"></canvas></div></div>
+    </div>
+  </div>
+
+  <div class="view" id="v-prod">
+    <div class="grid">
+      <div class="card"><h3>Matriz de rentabilidad: unidades vs. margen %</h3><div class="ch"><canvas id="cMatriz"></canvas></div></div>
+      <div class="card"><h3>Top 10 productos por utilidad bruta</h3><div class="ch"><canvas id="cProdUtil"></canvas></div></div>
+      <div class="card" style="grid-column:1/-1"><h3>Detalle de productos (clic en columna para ordenar)</h3><div class="tw" id="tProd"></div></div>
+    </div>
+  </div>
+
+  <div class="view" id="v-suc">
+    <div class="grid">
+      <div class="card"><h3>Ventas vs. margen por sucursal</h3><div class="ch"><canvas id="cSucMargen"></canvas></div></div>
+      <div class="card"><h3>Tiempo promedio de entrega y preparación (min)</h3><div class="ch"><canvas id="cSucTiempo"></canvas></div></div>
+      <div class="card" style="grid-column:1/-1"><h3>Ranking de sucursales</h3><div class="tw" id="tSuc"></div></div>
+    </div>
+  </div>
+
+  <div class="view" id="v-cli">
+    <div class="grid">
+      <div class="card"><h3>Ticket promedio y frecuencia por segmento</h3><div class="ch"><canvas id="cSegTicket"></canvas></div></div>
+      <div class="card"><h3>Formas de pago</h3><div class="ch"><canvas id="cPago"></canvas></div></div>
+      <div class="card" style="grid-column:1/-1"><h3>Indicadores por segmento</h3><div class="tw" id="tSeg"></div></div>
+    </div>
+  </div>
+
+  <div class="view" id="v-ia">
+    <div class="grid">
+      <div class="card">
+        <h3>🤖 Asistente IA – Recomendaciones comerciales</h3>
+        <p class="status">El asistente analiza los indicadores <b>con los filtros activos</b>. Modo automático: motor analítico integrado (sin conexión). Modo LLM: Claude (Anthropic) con su API key, que se guarda solo en este navegador.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <button class="btn" id="btnLocal">Generar recomendaciones (motor integrado)</button>
+        </div>
+        <div id="recoLocal"></div>
+      </div>
+      <div class="card">
+        <h3>💬 Pregunte a la IA (Claude)</h3>
+        <label class="status">API key de Anthropic</label>
+        <input type="password" id="apiKey" placeholder="sk-ant-..." style="width:100%;padding:7px;border:1px solid var(--line);border-radius:6px">
+        <label class="status">Modelo</label>
+        <select id="model" style="width:100%;padding:7px;border:1px solid var(--line);border-radius:6px">
+          <option value="claude-sonnet-5-5">claude-sonnet-5-5</option>
+          <option value="claude-opus-5-5">claude-opus-5-5</option>
+          <option value="claude-haiku-5-5">claude-haiku-5-5</option>
+        </select>
+        <label class="status">Pregunta</label>
+        <textarea id="q" rows="3" style="width:100%;padding:7px;border:1px solid var(--line);border-radius:6px">Con base en los indicadores, dame 5 recomendaciones comerciales priorizadas, con la evidencia numérica de cada una.</textarea>
+        <button class="btn" id="btnLLM" style="margin-top:6px">Consultar a Claude</button>
+        <div id="recoLLM" class="chat" style="margin-top:10px"></div>
+        <p class="status">⚠️ Las recomendaciones de IA deben ser validadas críticamente por el equipo antes de incorporarse a las conclusiones.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="view" id="v-data">
+    <div class="card">
+      <h3>Actualización automática de la base de datos</h3>
+      <p>Cargue un nuevo archivo Excel (.xlsx) o CSV. No se modifica el código: todos los indicadores y gráficas se recalculan al instante. El archivo debe conservar los nombres de columna originales.</p>
+      <div class="drop"><b>Ventas</b> (obligatorio para actualizar)<br><input type="file" id="upVentas" accept=".xlsx,.xls,.csv"></div>
+      <div class="drop"><b>Clientes</b> (opcional)<br><input type="file" id="upClientes" accept=".xlsx,.xls,.csv"></div>
+      <div class="drop"><b>Productos</b> (opcional)<br><input type="file" id="upProductos" accept=".xlsx,.xls,.csv"></div>
+      <button class="btn sec" id="btnDefault">Restaurar bases originales</button>
+      <p class="status" id="upStatus"></p>
+      <p class="status">También puede reemplazar los archivos de la carpeta <code>data/</code> del servidor con el mismo nombre: la aplicación los leerá en la siguiente carga.</p>
+    </div>
+  </div>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

@@ -368,11 +368,22 @@ function kpis(rows) {
 }
 
 /* ---------- Render ---------- */
-const REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const FMTS = { '$': fmt$, '$2': fmt$2, n: v => fmtN(v) + ' u.', '%': v => v.toFixed(1) + '%', min: v => v.toFixed(1) + ' min', x: v => v.toFixed(1) };
+const REDUCED =window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 function chart(id, cfg) {
   const fid = CHART_FILTER[id];
   cfg.options = Object.assign({ responsive: true, maintainAspectRatio: false, animation: { duration: REDUCED ? 0 : 700, easing: 'easeOutQuart' },
     plugins: { legend: { position: 'bottom' } } }, cfg.options || {});
+  // Tooltips con formato de negocio ($, %, unidades, minutos) y % del total en gráficos circulares
+  cfg.options.plugins = cfg.options.plugins || { legend: { position: 'bottom' } };
+  if (!cfg.options.plugins.tooltip) cfg.options.plugins.tooltip = { callbacks: { label: c => {
+    const f = FMTS[c.dataset.fmt || '$'], v = typeof c.raw === 'object' ? c.parsed.y : c.raw;
+    if (['pie', 'doughnut'].includes(c.chart.config.type)) {
+      const tot = c.dataset.data.reduce((s, x) => s + x, 0);
+      return ` ${c.label}: ${f(v)} (${fmtP(v / (tot || 1))})`;
+    }
+    return ` ${c.dataset.label || c.label}: ${f(v)}`;
+  } } };
   if (fid) {
     cfg.options.onClick = (e, els, ch) => {
       if (!els.length) return;
@@ -389,8 +400,13 @@ function chart(id, cfg) {
 
 /* ---------- KPI animados: contador, variación vs periodo anterior y mini tendencia ---------- */
 const KDEF = [
-  ['venta', 'Ventas totales', fmt$], ['util', 'Utilidad bruta', fmt$], ['margen', 'Margen bruto', fmtP], ['ticket', 'Ticket promedio', fmt$2],
-  ['ncli', 'N.º clientes', fmtN], ['ntx', 'N.º transacciones', fmtN], ['cant', 'Unidades vendidas', fmtN]];
+  ['venta', 'Ventas totales', fmt$, 'Suma de VentaNeta (después de descuentos) del periodo filtrado'],
+  ['util', 'Utilidad bruta', fmt$, 'Ventas − Costo total de los productos vendidos'],
+  ['margen', 'Margen bruto', fmtP, 'Utilidad bruta ÷ Ventas totales'],
+  ['ticket', 'Ticket promedio', fmt$2, 'Ventas totales ÷ N.º de transacciones'],
+  ['ncli', 'N.º clientes', fmtN, 'Clientes distintos (ClienteID) con al menos una compra en el periodo'],
+  ['ntx', 'N.º transacciones', fmtN, 'Ventas distintas (VentaID) en el periodo'],
+  ['cant', 'Unidades vendidas', fmtN, 'Suma de Cantidad vendida']];
 function animateNum(el, from, to, fmt) {
   if (REDUCED || from === to) { el.textContent = fmt(to); return; }
   const t0 = performance.now(), dur = 800, tok = (el._tok = (el._tok || 0) + 1);
@@ -420,7 +436,7 @@ function sparkSVG(vals) {
 }
 function renderKPIs(K, byMes) {
   if (!$('kpis').children.length) {
-    $('kpis').innerHTML = KDEF.map(([k, l]) => `<div class="kpi" data-k="${k}"><div class="l">${l}</div><div class="v">—</div><div class="d"></div><div class="sp"></div></div>`).join('');
+    $('kpis').innerHTML = KDEF.map(([k, l, , tip]) => `<div class="kpi" data-k="${k}" title="${tip}"><div class="l">${l}<span class="i">ⓘ</span></div><div class="v">—</div><div class="d"></div><div class="sp"></div></div>`).join('');
     observeReveal($('kpis'));
   }
   S.kPrev = S.kPrev || {};
@@ -442,30 +458,33 @@ function renderKPIs(K, byMes) {
 
 /* ---------- Hallazgos clave automáticos ---------- */
 function renderInsights(R, byMes, bySuc, byProd, bySeg, K) {
-  const cards = [];
+  // Tendencia (banda superior) + matriz Dimensión × (mejor / a atender): responde a las preguntas 2, 3 y 4 del caso
+  let trend = '';
   if (byMes.length >= 2) {
     const n = byMes.length >= 24 ? 12 : Math.floor(byMes.length / 2);
     const ult = byMes.slice(-n).reduce((s, d) => s + d.venta, 0), ant = byMes.slice(-2 * n, -n).reduce((s, d) => s + d.venta, 0);
     if (ant) {
       const r = (ult - ant) / ant;
-      cards.push({ ico: r >= 0 ? '📈' : '📉', t: 'Tendencia de ventas', v: `${r >= 0 ? '+' : '−'}${Math.abs(r * 100).toFixed(1)}%`, cls: r >= 0 ? 'up' : 'down',
-        s: `Últimos ${n} meses (${fmt$(ult)}) vs ${n} anteriores (${fmt$(ant)})` });
+      trend = `<div class="ins wide ${r >= 0 ? 'good' : 'bad'}"><div class="ico">${r >= 0 ? '📈' : '📉'}</div><div><div class="l">Tendencia de ventas</div>
+        <div class="v ${r >= 0 ? 'up' : 'down'}">${r >= 0 ? '+' : '−'}${Math.abs(r * 100).toFixed(1)}%</div>
+        <div class="s">Últimos ${n} meses (${fmt$(ult)}) vs ${n} meses anteriores (${fmt$(ant)})</div></div></div>`;
     }
   }
-  const sU = [...bySuc].sort((a, b) => b.util - a.util)[0];
-  if (sU) cards.push({ ico: '🏆', t: 'Sucursal más rentable', v: sU.k, s: `${fmt$(sU.util)} de utilidad · margen ${fmtP(sU.margen)}`, f: ['fSucursal', sU.k] });
-  const pU = [...byProd].sort((a, b) => b.util - a.util)[0];
-  if (pU) cards.push({ ico: '🍕', t: 'Producto más rentable', v: pU.k, s: `${fmt$(pU.util)} · ${fmtP(pU.util / (K.util || 1))} de la utilidad total`, f: ['fProducto', pU.k] });
-  const sL = [...bySuc].sort((a, b) => a.util - b.util)[0];
-  if (sL && bySuc.length > 1) cards.push({ ico: '⚠️', t: 'Sucursal con menor desempeño', v: sL.k, cls: 'down',
-    s: `${fmt$(sL.util)} de utilidad · margen ${fmtP(sL.margen)} · ${fmt$(sU.util - sL.util)} menos que la mejor`, f: ['fSucursal', sL.k] });
-  const pL = [...byProd].sort((a, b) => a.util - b.util)[0];
-  if (pL && byProd.length > 1) cards.push({ ico: '🔍', t: 'Producto a revisar', v: pL.k, cls: 'down',
-    s: `Menor utilidad: ${fmt$(pL.util)} · margen ${fmtP(pL.margen)} · ${fmtN(pL.cant)} unidades`, f: ['fProducto', pL.k] });
-  const sg = bySeg[0];
-  if (sg) cards.push({ ico: '👥', t: 'Segmento líder', v: sg.k, s: `${fmtP(sg.venta / (K.venta || 1))} de las ventas · ticket ${fmt$2(sg.ticket)}`, f: ['fSegmento', sg.k] });
-  $('insights').innerHTML = cards.map((c, i) => `<div class="ins" ${c.f ? `data-fid="${c.f[0]}" data-val="${esc(c.f[1])}" title="Clic para filtrar"` : ''}>
-    <div class="ico">${c.ico}</div><div><div class="l">${c.t}</div><div class="v ${c.cls || ''}">${esc(c.v)}</div><div class="s">${c.s}</div></div></div>`).join('');
+  const seg = segInfo(), byU = a => [...a].sort((x, y) => y.util - x.util), byV = a => [...a].sort((x, y) => y.venta - x.venta);
+  const sB = byU(bySuc)[0], sW = byU(bySuc).at(-1), pB = byU(byProd)[0], pW = byU(byProd).at(-1), gB = byV(bySeg)[0], gW = byV(bySeg).at(-1);
+  const card = (kind, ico, t, d, s, fid) => d ? `<div class="ins ${kind}" data-fid="${fid}" data-val="${esc(d.k)}" title="Clic para filtrar">
+    <div class="ico">${ico}</div><div><div class="l">${t}</div><div class="v ${kind === 'bad' ? 'down' : ''}">${esc(d.k)}</div><div class="s">${s}</div></div></div>`
+    : `<div class="ins empty"><div class="s">Sin comparación con el filtro actual</div></div>`;
+  const solo = a => a.length < 2;
+  const cols = [
+    ['🏬 Sucursales', card('good', '🏆', 'Mejor desempeño', sB, sB && `${fmt$(sB.util)} de utilidad · margen ${fmtP(sB.margen)} · ticket ${fmt$2(sB.ticket)}`, 'fSucursal'),
+      card('bad', '⚠️', 'Menor desempeño', solo(bySuc) ? null : sW, sW && `${fmt$(sW.util)} de utilidad · margen ${fmtP(sW.margen)} · ${fmt$(sB.util - sW.util)} menos que la mejor`, 'fSucursal')],
+    ['🍕 Productos', card('good', '💰', 'Más rentable', pB, pB && `${fmt$(pB.util)} · ${fmtP(pB.util / (K.util || 1))} de la utilidad · margen ${fmtP(pB.margen)}`, 'fProducto'),
+      card('bad', '🔍', 'A revisar', solo(byProd) ? null : pW, pW && `Menor utilidad: ${fmt$(pW.util)} · margen ${fmtP(pW.margen)} · ${fmtN(pW.cant)} u.`, 'fProducto')],
+    ['👥 Segmentos', card('good', '⭐', 'Segmento líder', gB, gB && `${fmtP(gB.venta / (K.venta || 1))} de las ventas · ticket ${fmt$2(gB.ticket)} · ${fmtP(seg[gB.k]?.act || 0)} activos`, 'fSegmento'),
+      card('bad', '📌', 'Menor participación', solo(bySeg) ? null : gW, gW && `${fmtP(gW.venta / (K.venta || 1))} de las ventas · ticket ${fmt$2(gW.ticket)} · ${fmtP(seg[gW.k]?.act || 0)} activos${seg[gW.k]?.motivo ? ' · pérdida: ' + esc(seg[gW.k].motivo) : ''}`, 'fSegmento')]
+  ];
+  $('insights').innerHTML = trend + cols.map(([h, a, b]) => `<div class="ins-col"><div class="ins-h">${h}</div>${a}${b}</div>`).join('');
   $('insights').querySelectorAll('[data-fid]').forEach(el => el.onclick = () => crossFilter(el.dataset.fid, el.dataset.val));
   observeReveal($('insights'));
 }
@@ -483,7 +502,7 @@ function observeReveal(root) {
 }
 const moneyAxis = { ticks: { callback: v => '$' + (Math.abs(v) >= 1000 ? (v / 1000).toFixed(0) + 'k' : v) } };
 function barH(id, data, label, valFn = d => d.venta, color = PAL[0]) {
-  chart(id, { type: 'bar', data: { labels: data.map(d => d.k), datasets: [{ label, data: data.map(valFn), backgroundColor: color }] },
+  chart(id, { type: 'bar', data: { labels: data.map(d => d.k), datasets: [{ label, data: data.map(valFn), backgroundColor: color, fmt: label === 'Unidades' ? 'n' : '$' }] },
     options: { indexAxis: 'y', plugins: { legend: { display: false } } } });
 }
 function table(el, cols, data) {
@@ -537,10 +556,10 @@ function refresh() {
   // Sucursales
   chart('cSucMargen', { type: 'bar', data: { labels: bySuc.map(d => d.k), datasets: [
     { label: 'Ventas', data: bySuc.map(d => d.venta), backgroundColor: PAL[1], yAxisID: 'y' },
-    { label: 'Margen %', data: bySuc.map(d => d.margen * 100), type: 'line', borderColor: PAL[0], yAxisID: 'y1' }] },
+    { label: 'Margen %', fmt: '%', data: bySuc.map(d => d.margen * 100), type: 'line', borderColor: PAL[0], yAxisID: 'y1' }] },
     options: { scales: { y: moneyAxis, y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => v + '%' } } } } });
   chart('cSucTiempo', { type: 'bar', data: { labels: bySuc.map(d => d.k), datasets: [
-    { label: 'Entrega (delivery)', data: bySuc.map(d => d.entrega), backgroundColor: PAL[3] }, { label: 'Preparación', data: bySuc.map(d => d.prep), backgroundColor: PAL[5] }] } });
+    { label: 'Entrega (delivery)', fmt: 'min', data: bySuc.map(d => d.entrega), backgroundColor: PAL[3] }, { label: 'Preparación', fmt: 'min', data: bySuc.map(d => d.prep), backgroundColor: PAL[5] }] } });
   table('tSuc', [
     { h: 'Sucursal', v: d => d.k }, { h: 'Ventas', v: d => d.venta, f: d => fmt$(d.venta) }, { h: 'Utilidad', v: d => d.util, f: d => fmt$(d.util) },
     { h: 'Margen', v: d => d.margen, f: d => mTag(d.margen) }, { h: 'Transacciones', v: d => d.ntx, f: d => fmtN(d.ntx) },
@@ -549,8 +568,8 @@ function refresh() {
 
   // Clientes
   chart('cSegTicket', { type: 'bar', data: { labels: bySeg.map(d => d.k), datasets: [
-    { label: 'Ticket promedio', data: bySeg.map(d => d.ticket), backgroundColor: PAL[1], yAxisID: 'y' },
-    { label: 'Transacciones por cliente', data: bySeg.map(d => d.ncli ? d.ntx / d.ncli : 0), backgroundColor: PAL[3], yAxisID: 'y1' }] },
+    { label: 'Ticket promedio', fmt: '$2', data: bySeg.map(d => d.ticket), backgroundColor: PAL[1], yAxisID: 'y' },
+    { label: 'Transacciones por cliente', fmt: 'x', data: bySeg.map(d => d.ncli ? d.ntx / d.ncli : 0), backgroundColor: PAL[3], yAxisID: 'y1' }] },
     options: { scales: { y: { ticks: { callback: v => '$' + v } }, y1: { position: 'right', grid: { drawOnChartArea: false } } } } });
   const byPago = group(R, 'pago').sort((a, b) => b.venta - a.venta);
   chart('cPago', { type: 'doughnut', data: { labels: byPago.map(d => d.k), datasets: [{ data: byPago.map(d => d.venta), backgroundColor: PAL }] } });
@@ -644,5 +663,14 @@ $('upProductos').onchange = e => upload(e.target, 'p', 'Productos');
 $('btnDefault').onclick = loadDefault;
 $('btnLocal').onclick = motorLocal;
 $('btnLLM').onclick = consultarLLM;
+$('btnPrint').onclick = () => window.print();
+$('btnCSV').onclick = () => { // exporta las ventas con los filtros activos
+  const cols = ['id', 'fecha', 'ciudad', 'suc', 'cli', 'seg', 'pid', 'prod', 'cat', 'canal', 'pago', 'cant', 'venta', 'costo', 'util'];
+  const head = ['VentaID', 'Fecha', 'Ciudad', 'Sucursal', 'ClienteID', 'Segmento', 'ProductoID', 'Producto', 'Categoria', 'Canal', 'FormaPago', 'Cantidad', 'VentaNeta', 'CostoTotal', 'UtilidadBruta'];
+  const q = v => { const s = String(v ?? ''); return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const csv = String.fromCharCode(0xFEFF) + [head.join(','), ...S.rows.map(r => cols.map(c => q(typeof r[c] === 'number' ? +r[c].toFixed(2) : r[c])).join(','))].join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `ventas_filtradas_${new Date().toISOString().slice(0, 10)}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
 document.querySelectorAll('.grid').forEach(observeReveal);
 loadDefault();

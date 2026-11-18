@@ -217,7 +217,7 @@ async function loadDefault() {
 function rebuild() {
   const P = buildProductos(S.raw.p || []), C = buildClientes(S.raw.c || []), V = buildVentas(S.raw.v || [], P.map, C.map);
   S.productos = P.map; S.clientes = C.map; S.ventas = V.list; S.qa = { p: P.q, c: C.q, v: V.q };
-  initFilters(); refresh(); renderQA();
+  initFilters(); refresh(); renderQA(); renderHome();
   const alerta = qaAlertas().length ? ' · ⚠ revisar calidad de datos en “Cargar datos”' : '';
   $('dsinfo').textContent = `${S.src.v} · ${fmtN(S.ventas.length)} registros · ${V.q.desde || ''} a ${V.q.hasta || ''} · ${S.clientes.size} clientes · ${S.productos.size} productos${alerta}`;
 }
@@ -489,6 +489,34 @@ function renderInsights(R, byMes, bySuc, byProd, bySeg, K) {
   observeReveal($('insights'));
 }
 
+/* ---------- Portada (Inicio): cifras macro de toda la base, sin filtros ---------- */
+function renderHome() {
+  const all = S.ventas; if (!all.length) return;
+  const K = kpis(all), meses = group(all, 'mes').sort((a, b) => a.k.localeCompare(b.k));
+  const n = meses.length >= 24 ? 12 : Math.floor(meses.length / 2);
+  const ult = meses.slice(-n).reduce((s, d) => s + d.venta, 0), ant = meses.slice(-2 * n, -n).reduce((s, d) => s + d.venta, 0);
+  const tr = ant ? (ult - ant) / ant : 0;
+  S.home = [
+    ['Ventas totales', K.venta, fmt$, ''],
+    ['Margen bruto', K.margen, fmtP, ''],
+    [`Tendencia (últ. ${n} meses)`, tr, v => (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1) + '%', tr >= 0 ? 'up' : 'down'],
+    ['Transacciones', K.ntx, fmtN, '']];
+  $('heroStats').innerHTML = S.home.map(([t, , , c], i) => `<div class="hstat" style="--d:${300 + i * 120}ms"><div class="n ${c}">—</div><div class="t">${t}</div></div>`).join('');
+  $('heroPeriod').textContent = `Periodo analizado: ${S.fMin} a ${S.fMax} · ${fmtN(all.length)} registros de ventas · ${S.clientes.size} clientes · ${S.productos.size} productos`;
+  // Curva de ventas mensuales como fondo animado
+  const v = meses.map(m => m.venta), mx = Math.max(...v), mn = Math.min(...v) * .85, rg = mx - mn || 1;
+  const pts = v.map((y, i) => `${(i / Math.max(1, v.length - 1)) * 1000},${(290 - ((y - mn) / rg) * 250).toFixed(1)}`);
+  $('heroLine').setAttribute('d', 'M' + pts.join(' L'));
+  $('heroArea').setAttribute('d', 'M0,300 L' + pts.join(' L') + ' L1000,300 Z');
+  animHome();
+}
+function animHome() {
+  if (!S.home || !$('v-home').classList.contains('on')) return;
+  const els = $('heroStats').querySelectorAll('.n');
+  S.home.forEach(([, val, fmt], i) => { els[i]._tok = 0; animateNum(els[i], 0, val, fmt); });
+  const line = $('heroLine'); line.style.animation = 'none'; void line.getBBox(); line.style.animation = ''; // reinicia el trazo
+}
+
 /* ---------- Animación de aparición al hacer scroll ---------- */
 const IO = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => {
   if (e.isIntersecting) { e.target.classList.add('in'); IO.unobserve(e.target); }
@@ -652,7 +680,8 @@ async function consultarLLM() {
 
 /* ---------- Eventos ---------- */
 function show(v) { document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); document.querySelectorAll('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + v));
-  const datos = v === 'data' || v === 'about'; $('filters').style.display = datos ? 'none' : ''; $('kpis').style.display = datos ? 'none' : ''; $('chips').style.display = datos ? 'none' : '';
+  const datos = v === 'data' || v === 'about' || v === 'home';
+  if (v === 'home') setTimeout(animHome, 0); $('filters').style.display = datos ? 'none' : ''; $('kpis').style.display = datos ? 'none' : ''; $('chips').style.display = datos ? 'none' : '';
   window.scrollTo(0, 0); }
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => show(b.dataset.v));
 ['fDesde', 'fHasta', ...Object.keys(FSEL)].forEach(id => $(id).addEventListener('change', () => { if (id === 'fCiudad' || id === 'fCategoria') cascade(); refresh(); }));
@@ -673,4 +702,8 @@ $('btnCSV').onclick = () => { // exporta las ventas con los filtros activos
   a.download = `ventas_filtradas_${new Date().toISOString().slice(0, 10)}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 };
 document.querySelectorAll('.grid').forEach(observeReveal);
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => show(b.dataset.go));
+// Primera visita: abre la portada; las siguientes, directo al Dashboard (preferencia guardada solo en este navegador)
+let visto = false; try { visto = localStorage.getItem('sfcp_visto') === '1'; localStorage.setItem('sfcp_visto', '1'); } catch (e) { }
+if (!visto) show('home');
 loadDefault();

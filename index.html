@@ -61,6 +61,27 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
 .spark .area{fill:var(--acc);opacity:.12}
 h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mute);font-size:11px}
 .insights{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+/* Portada (Inicio) */
+.hero{position:relative;overflow:hidden;border-radius:16px;background:radial-gradient(120% 140% at 85% 10%,#14a9dc 0%,#006f96 45%,#0b2a45 100%);color:#fff;min-height:min(78vh,640px);display:flex;align-items:center}
+.hero-bg{position:absolute;inset:auto 0 0 0;width:100%;height:55%;opacity:.35}
+.hero-bg .line{fill:none;stroke:#fff;stroke-width:3;vector-effect:non-scaling-stroke;stroke-dasharray:3000;stroke-dashoffset:3000;animation:draw 2.6s ease-out .3s forwards}
+.hero-bg .area{fill:#fff;opacity:.12}
+@keyframes draw{to{stroke-dashoffset:0}}
+.hero-in{position:relative;padding:48px clamp(18px,5vw,64px);max-width:1100px;animation:fadeUp .8s cubic-bezier(.2,.7,.2,1) both}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#bfe9f8;margin-bottom:10px}
+.hero h2{font-size:clamp(28px,5vw,52px);line-height:1.08;margin:0 0 14px;font-weight:700}.hero h2 span{color:#9fe3ff}
+.hero p{font-size:clamp(14px,1.6vw,17px);max-width:720px;color:#e3f4fb;margin:0 0 26px;line-height:1.55}
+.hero-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:8px}
+.hstat{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:14px 16px;backdrop-filter:blur(4px);animation:fadeUp .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d)}
+.hstat .n{font-size:clamp(22px,3vw,34px);font-weight:700;font-variant-numeric:tabular-nums}.hstat .t{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#cdeefa}
+.hstat .n.down{color:#ffb4ae}.hstat .n.up{color:#a6f0c6}
+.hero-period{font-size:12px;color:#bfe9f8;margin-bottom:22px}
+.hero-cta{display:flex;flex-wrap:wrap;gap:10px}
+.cta{border:1px solid rgba(255,255,255,.6);background:transparent;color:#fff;border-radius:24px;padding:11px 18px;font-weight:600;cursor:pointer;transition:background .2s,transform .2s}
+.cta:hover{background:rgba(255,255,255,.15);transform:translateY(-2px)}.cta.main{background:#fff;color:var(--acc-d);border-color:#fff}.cta.main:hover{background:#e8f7fd}
+.hero-foot{margin-top:26px;font-size:11px;color:#9fd6ea;letter-spacing:.05em}
+@media(max-width:700px){.hero-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (prefers-reduced-motion:reduce){.hero-bg .line{animation:none;stroke-dashoffset:0}.hero-in,.hstat{animation:none}}
 .ins.wide{grid-column:1/-1}
 .ins-col{display:flex;flex-direction:column;gap:8px;min-width:0}
 .ins-h{font-size:12px;font-weight:700;color:var(--acc-d);text-transform:uppercase;letter-spacing:.04em;padding:2px 2px 0}
@@ -97,6 +118,7 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
 <header>
   <div><div class="brand">UNIR · Máster en Dirección Comercial y Ventas · Sistemas de Información para la Toma de Decisiones Comerciales · Grupo 5 – Lote 6</div><h1>🍕 San Francisco Crust Pizza · Sistema Inteligente de Apoyo a Decisiones</h1><small id="dsinfo"></small></div>
   <nav class="tabs">
+    <button data-v="home">Inicio</button>
     <button data-v="dash" class="on">Dashboard</button>
     <button data-v="prod">Productos</button>
     <button data-v="suc">Sucursales</button>
@@ -121,6 +143,26 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
   </section>
   <div class="chips" id="chips"></div>
   <div class="kpis" id="kpis"></div>
+
+  <div class="view" id="v-home">
+    <section class="hero">
+      <svg class="hero-bg" viewBox="0 0 1000 300" preserveAspectRatio="none" aria-hidden="true"><path id="heroArea" class="area"/><path id="heroLine" class="line"/></svg>
+      <div class="hero-in">
+        <div class="eyebrow">San Francisco Crust Pizza · Sistema Inteligente de Apoyo a la Toma de Decisiones</div>
+        <h2>De reportes en Excel a<br><span>decisiones basadas en datos</span></h2>
+        <p>Ventas, clientes y productos integrados en un dashboard interactivo con filtros, hallazgos automáticos y un asistente de IA que propone recomendaciones comerciales.</p>
+        <div class="hero-stats" id="heroStats"></div>
+        <div class="hero-period" id="heroPeriod"></div>
+        <div class="hero-cta">
+          <button class="cta main" data-go="dash">📊 Ver dashboard</button>
+          <button class="cta" data-go="prod">🍕 Analizar productos</button>
+          <button class="cta" data-go="ia">🤖 Preguntar a la IA</button>
+          <button class="cta" data-go="data">⬆ Cargar datos</button>
+        </div>
+        <div class="hero-foot">UNIR · Máster en Dirección Comercial y Ventas · Grupo 5 – Lote 6</div>
+      </div>
+    </section>
+  </div>
 
   <div class="view on" id="v-dash">
     <h3 class="sec">Hallazgos clave <small>(se recalculan con los filtros · clic para filtrar)</small></h3>
@@ -254,6 +296,6 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
     </div>
   </div>
 </main>
-<script src="app.js?v=14"></script>
+<script src="app.js?v=16"></script>
 </body>
 </html>

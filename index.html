@@ -46,6 +46,8 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
 .tag{padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600}
 .g{background:#e3f6ec;color:var(--ok)}.r{background:#fde8e6;color:var(--bad)}.y{background:#fff4dc;color:var(--warn)}
 .view{display:none}.view.on{display:block}
+.qa{padding:8px 10px;border-radius:6px;margin:6px 0;font-size:13px;line-height:1.45}
+.qa.g{background:#e3f6ec;color:#14532d}.qa.y{background:#fff4dc;color:#7a4a00}.qa.r{background:#fde8e6;color:#8a1c16}
 .status{font-size:12px;color:var(--mute);margin:6px 0}
 .drop{border:2px dashed var(--line);border-radius:10px;padding:18px;text-align:center;margin:8px 0}
 .reco{border-left:4px solid var(--acc2);background:#f7f9fc;padding:10px 12px;margin:8px 0;border-radius:6px}
@@ -150,13 +152,24 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
   <div class="view" id="v-data">
     <div class="card">
       <h3>Actualización automática de la base de datos</h3>
-      <p>Cargue un nuevo archivo Excel (.xlsx) o CSV. No se modifica el código: todos los indicadores y gráficas se recalculan al instante. El archivo debe conservar los nombres de columna originales.</p>
+      <p>Cargue un nuevo archivo Excel (.xlsx) o CSV, con cualquier nombre. No se modifica el código: todos los indicadores y gráficas se recalculan al instante. Antes de reemplazar los datos, la aplicación <b>valida la estructura</b>: si faltan columnas obligatorias el archivo se rechaza y se conservan los datos anteriores; si el archivo corresponde a otra base (p. ej. Clientes en la casilla de Ventas) se detecta y se carga donde corresponde. También reconoce nombres de columna alternativos (Date, Total, Store, SKU…).</p>
+      <details class="status" style="margin-bottom:8px"><summary>Columnas obligatorias por base</summary>
+        <ul>
+          <li><b>Ventas:</b> Fecha, ClienteID, ProductoID y VentaNeta (o Cantidad). Recomendadas: VentaID, Ciudad, Sucursal, Canal, CostoTotal, UtilidadBruta.</li>
+          <li><b>Clientes:</b> ClienteID y Segmento. Recomendadas: Ciudad, ClienteActivo, NPS, MotivoPerdida.</li>
+          <li><b>Productos:</b> ProductoID y Producto (o Categoria). Recomendadas: CostoUSD, PrecioVentaUSD, Tamaño.</li>
+        </ul>
+      </details>
       <div class="drop"><b>Ventas</b> (obligatorio para actualizar)<br><input type="file" id="upVentas" accept=".xlsx,.xls,.csv"></div>
       <div class="drop"><b>Clientes</b> (opcional)<br><input type="file" id="upClientes" accept=".xlsx,.xls,.csv"></div>
       <div class="drop"><b>Productos</b> (opcional)<br><input type="file" id="upProductos" accept=".xlsx,.xls,.csv"></div>
       <button class="btn sec" id="btnDefault">Restaurar bases originales</button>
       <p class="status" id="upStatus"></p>
-      <p class="status">También puede reemplazar los archivos de la carpeta <code>data/</code> del servidor con el mismo nombre: la aplicación los leerá en la siguiente carga.</p>
+      <p class="status">También puede reemplazar los archivos de la carpeta <code>data/</code> del servidor. Los nombres se configuran en <code>data/config.json</code>, sin tocar el código.</p>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h3>Calidad e integridad de los datos</h3>
+      <div id="qa"></div>
     </div>
   </div>
 
@@ -191,6 +204,6 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
     </div>
   </div>
 </main>
-<script src="app.js?v=6"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

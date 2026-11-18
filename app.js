@@ -1,98 +1,293 @@
 /* San Francisco Crust Pizza – Sistema Inteligente de Apoyo a la Toma de Decisiones */
-const FILES = {
-  ventas: 'data/San_Francisco_Crust_Pizza_Ventas.xlsx',
-  clientes: 'data/San_Francisco_Crust_Pizza_Clientes.xlsx',
-  productos: 'data/San_Francisco_Crust_Pizza_Productos.xlsx'
+// Nombres por defecto; pueden cambiarse sin tocar el código en data/config.json
+let FILES = {
+  ventas: 'San_Francisco_Crust_Pizza_Ventas.xlsx',
+  clientes: 'San_Francisco_Crust_Pizza_Clientes.xlsx',
+  productos: 'San_Francisco_Crust_Pizza_Productos.xlsx'
 };
-const S = { ventas: [], clientes: new Map(), productos: new Map(), rows: [], charts: {}, src: {}, raw: {} };
+const S = { ventas: [], clientes: new Map(), productos: new Map(), rows: [], charts: {}, src: {}, raw: {}, qa: {}, renamed: {} };
 const $ = id => document.getElementById(id);
 const fmt$ = v => '$' + Math.round(v).toLocaleString('en-US');
 const fmt$2 = v => '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtN = v => Math.round(v).toLocaleString('en-US');
 const fmtP = v => (v * 100).toFixed(1) + '%';
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const PAL = ['#0098cd', '#1b365d', '#f0a202', '#5bb8a6', '#d0342c', '#7c8a96', '#8ccbe6', '#a05195', '#3d9970', '#e07a5f'];
 
-/* ---------- Lectura de archivos ---------- */
+/* ---------- Esquemas, sinónimos y validación ---------- */
+const TIPOS = { v: 'Ventas', c: 'Clientes', p: 'Productos' };
+// Nombre canónico -> nombres alternativos aceptados (ya normalizados: sin tildes, espacios ni mayúsculas)
+const SYN = {
+  v: {
+    ventaid: ['idventa', 'transaccionid', 'idtransaccion', 'orderid', 'saleid', 'ticket', 'numventa', 'factura'],
+    fecha: ['date', 'fechaventa', 'orderdate', 'fechapedido', 'dia'],
+    ciudad: ['city', 'localidad'],
+    sucursal: ['store', 'tienda', 'local', 'branch', 'storename'],
+    clienteid: ['idcliente', 'cliente', 'customerid', 'customer', 'codcliente'],
+    productoid: ['idproducto', 'productid', 'sku', 'codproducto', 'codigoproducto'],
+    cantidad: ['qty', 'quantity', 'unidades', 'units'],
+    preciounitario: ['unitprice', 'precio', 'price'],
+    costounitario: ['unitcost', 'costo', 'cost'],
+    descuentopct: ['descuento', 'discount', 'discountpct'],
+    ventaneta: ['total', 'sales', 'ventas', 'importe', 'monto', 'netsales', 'venta', 'totalventa'],
+    costototal: ['totalcost', 'costtotal'],
+    utilidadbruta: ['utilidad', 'grossprofit', 'profit', 'ganancia'],
+    canal: ['channel'],
+    formapago: ['metodopago', 'paymentmethod', 'pago', 'payment'],
+    tiempoentregamin: ['tiempoentrega', 'deliverytime'],
+    tiempopreparacionmin: ['tiempopreparacion', 'preptime']
+  },
+  c: {
+    clienteid: ['idcliente', 'customerid', 'codcliente', 'cliente'],
+    segmento: ['segment', 'tipocliente', 'customersegment'],
+    ciudad: ['city'], edad: ['age'], clienteactivo: ['activo', 'active'],
+    nps: ['puntuacionnps'], motivoperdida: ['motivo', 'churnreason'], canalfavorito: ['canal', 'preferredchannel']
+  },
+  p: {
+    productoid: ['idproducto', 'productid', 'sku', 'codproducto', 'codigoproducto'],
+    categoria: ['category', 'familia', 'linea'],
+    producto: ['nombreproducto', 'productname', 'nombre', 'product', 'descripcion'],
+    tamano: ['size', 'talla'],
+    costousd: ['costo', 'cost', 'costounitario'],
+    precioventausd: ['precio', 'price', 'precioventa', 'pvp']
+  }
+};
+// Obligatorias: lista de grupos; cada grupo se cumple si existe alguna de sus columnas
+const REQ = {
+  v: [['fecha'], ['clienteid'], ['productoid'], ['ventaneta', 'cantidad']],
+  c: [['clienteid'], ['segmento']],
+  p: [['productoid'], ['producto', 'categoria']]
+};
+const RECO = {
+  v: ['ventaid', 'ciudad', 'sucursal', 'canal', 'cantidad', 'ventaneta', 'costototal', 'utilidadbruta'],
+  c: ['ciudad', 'clienteactivo', 'nps', 'motivoperdida'],
+  p: ['costousd', 'precioventausd', 'tamano']
+};
+const LABEL = { ventaid: 'VentaID', fecha: 'Fecha', ciudad: 'Ciudad', sucursal: 'Sucursal', clienteid: 'ClienteID', productoid: 'ProductoID',
+  cantidad: 'Cantidad', ventaneta: 'VentaNeta', costototal: 'CostoTotal', utilidadbruta: 'UtilidadBruta', canal: 'Canal', segmento: 'Segmento',
+  producto: 'Producto', categoria: 'Categoria', costousd: 'CostoUSD', precioventausd: 'PrecioVentaUSD', tamano: 'Tamaño', clienteactivo: 'ClienteActivo',
+  nps: 'NPS', motivoperdida: 'MotivoPerdida' };
+const lbl = k => LABEL[k] || k;
+
 const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+// Lee un Excel/CSV: toma la hoja con más filas y normaliza los encabezados
 function readWB(buf) {
-  const wb = XLSX.read(buf, { type: 'array', cellDates: true });
-  const ws = wb.Sheets[wb.SheetNames[0]];
-  return XLSX.utils.sheet_to_json(ws, { defval: null }).map(r => {
-    const o = {}; for (const k in r) o[norm(k)] = r[k]; return o;
-  });
+  const wb = XLSX.read(buf, { type: 'array', cellDates: false, raw: true }); // Excel: fechas como serial; CSV: texto sin interpretar (evita desfases por zona horaria)
+  let best = [];
+  for (const n of wb.SheetNames) {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[n], { defval: null });
+    if (rows.length > best.length) best = rows;
+  }
+  return best.map(r => { const o = {}; for (const k in r) o[norm(k)] = r[k]; return o; });
 }
-const num = v => { if (typeof v === 'number') return v; const n = parseFloat(String(v ?? '').replace(/[$,]/g, '')); return isNaN(n) ? 0 : n; };
+function headersOf(rows) { const h = new Set(); rows.slice(0, 50).forEach(r => Object.keys(r).forEach(k => h.add(k))); return h; }
+// Mapa columna original -> nombre canónico según el tipo de archivo
+function mapHeaders(headers, t) {
+  const map = {}, used = new Set();
+  for (const canon of Object.keys(SYN[t])) if (headers.has(canon)) { map[canon] = canon; used.add(canon); }
+  for (const [canon, alts] of Object.entries(SYN[t])) {
+    if (used.has(canon)) continue;
+    const hit = alts.find(a => headers.has(a) && !map[a]);
+    if (hit) { map[hit] = canon; used.add(canon); }
+  }
+  return map;
+}
+function evaluar(rows, t) {
+  const h = headersOf(rows), map = mapHeaders(h, t), have = new Set(Object.values(map));
+  const faltan = REQ[t].filter(g => !g.some(c => have.has(c))).map(g => g.map(lbl).join(' o '));
+  const renombradas = Object.entries(map).filter(([a, c]) => a !== c).map(([a, c]) => `${a} → ${lbl(c)}`);
+  return { ok: faltan.length === 0, faltan, map, have, renombradas, headers: [...h] };
+}
+function canonizar(rows, map) {
+  return rows.map(r => { const o = {}; for (const k in r) o[map[k] || k] = r[k]; return o; });
+}
+// Detecta el tipo por sus columnas: Ventas tiene fecha + cliente + producto; Clientes tiene segmento sin producto; Productos sin cliente
+function detectarTipo(rows) {
+  const e = { v: evaluar(rows, 'v'), c: evaluar(rows, 'c'), p: evaluar(rows, 'p') };
+  if (e.v.ok) return { tipo: 'v', e };
+  if (e.c.ok && !e.c.headers.some(x => ['productoid', 'idproducto', 'productid', 'sku'].includes(x))) return { tipo: 'c', e };
+  if (e.p.ok && !e.p.headers.some(x => ['clienteid', 'idcliente', 'customerid'].includes(x))) return { tipo: 'p', e };
+  return { tipo: null, e };
+}
+
+const num = v => {
+  if (typeof v === 'number') return v;
+  let s = String(v ?? '').replace(/[$\s]/g, '');
+  if (/,\d{1,2}$/.test(s) && s.includes('.')) s = s.replace(/\./g, '').replace(',', '.'); // 1.234,56
+  else if (/^\d+,\d{1,2}$/.test(s)) s = s.replace(',', '.');                              // 12,50
+  else s = s.replace(/,/g, '');                                                           // 1,234.56
+  const n = parseFloat(s); return isNaN(n) ? 0 : n;
+};
 function toISO(v) {
-  if (v instanceof Date) return new Date(v.getTime() - v.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
-  if (typeof v === 'number') return new Date(Math.round((v - 25569) * 864e5)).toISOString().slice(0, 10);
-  const s = String(v ?? '').trim();
-  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
-  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if (m) return `${m[3]}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
-  const d = new Date(s); return isNaN(d) ? null : d.toISOString().slice(0, 10);
+  let d = null;
+  if (v instanceof Date) d = new Date(Date.UTC(v.getFullYear(), v.getMonth(), v.getDate()));
+  else if (typeof v === 'number') d = new Date(Math.round((v - 25569) * 864e5));
+  else {
+    const s = String(v ?? '').trim(); if (!s) return null;
+    let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    else if ((m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})/))) {
+      let a = +m[1], b = +m[2]; const [mes, dia] = a > 12 ? [b, a] : [a, b]; // d/m/a si el primero > 12
+      d = new Date(Date.UTC(+m[3], mes - 1, dia));
+    } else { const x = new Date(s); if (!isNaN(x)) d = x; }
+  }
+  if (!d || isNaN(d)) return null;
+  const y = d.getUTCFullYear(); if (y < 2000 || y > 2100) return null;
+  return d.toISOString().slice(0, 10);
 }
 
-function setProductos(rows) {
-  S.productos = new Map(rows.filter(r => r.productoid).map(r => [String(r.productoid), {
-    id: String(r.productoid), cat: r.categoria || 'Sin categoría', nombre: r.producto || r.productoid,
-    tam: r.tamano || '', costo: num(r.costousd), precio: num(r.precioventausd), activo: r.activo
-  }]));
+function buildProductos(rows) {
+  const m = new Map(), q = { leidas: rows.length, sinId: 0, dup: 0, sinPrecio: 0 };
+  for (const r of rows) {
+    if (r.productoid == null || r.productoid === '') { q.sinId++; continue; }
+    const id = String(r.productoid).trim(); if (m.has(id)) q.dup++;
+    const precio = num(r.precioventausd), costo = num(r.costousd); if (!precio) q.sinPrecio++;
+    m.set(id, { id, cat: r.categoria || 'Sin categoría', nombre: r.producto || id, tam: r.tamano || '', costo, precio, activo: r.activo });
+  }
+  return { map: m, q };
 }
-function setClientes(rows) {
-  S.clientes = new Map(rows.filter(r => r.clienteid).map(r => [String(r.clienteid), {
-    id: String(r.clienteid), seg: r.segmento || 'Sin segmento', ciudad: r.ciudad, edad: num(r.edad),
-    activo: r.clienteactivo, nps: num(r.nps), motivo: r.motivoperdida, canalFav: r.canalfavorito
-  }]));
+function buildClientes(rows) {
+  const m = new Map(), q = { leidas: rows.length, sinId: 0, dup: 0, sinSeg: 0 };
+  for (const r of rows) {
+    if (r.clienteid == null || r.clienteid === '') { q.sinId++; continue; }
+    const id = String(r.clienteid).trim(); if (m.has(id)) q.dup++;
+    if (!r.segmento) q.sinSeg++;
+    m.set(id, { id, seg: r.segmento || 'Sin segmento', ciudad: r.ciudad, edad: num(r.edad), activo: r.clienteactivo, nps: num(r.nps), motivo: r.motivoperdida, canalFav: r.canalfavorito });
+  }
+  return { map: m, q };
 }
-function setVentas(rows) {
-  S.ventas = rows.filter(r => r.ventaid || r.fecha).map(r => {
-    const p = S.productos.get(String(r.productoid)) || {};
-    const c = S.clientes.get(String(r.clienteid)) || {};
+function buildVentas(rows, prods, clis) {
+  const out = [], ids = new Set(), sinCliIds = new Set(), sinProdIds = new Set();
+  const q = { leidas: rows.length, validas: 0, sinFecha: 0, montoCero: 0, negativos: 0, dupId: 0, sinCli: 0, sinProd: 0, sinSuc: 0 };
+  rows.forEach((r, i) => {
+    const fecha = toISO(r.fecha); if (!fecha) { q.sinFecha++; return; }
+    const pid = String(r.productoid ?? '').trim(), cid = String(r.clienteid ?? '').trim();
+    const p = prods.get(pid), c = clis.get(cid);
+    if (!p) { q.sinProd++; sinProdIds.add(pid); }
+    if (!c) { q.sinCli++; sinCliIds.add(cid); }
     const cant = num(r.cantidad) || 1;
-    const venta = r.ventaneta != null ? num(r.ventaneta) : num(r.preciounitario || p.precio) * cant * (1 - num(r.descuentopct) / 100);
-    const costo = r.costototal != null ? num(r.costototal) : num(r.costounitario || p.costo) * cant;
+    const venta = r.ventaneta != null ? num(r.ventaneta) : num(r.preciounitario ?? p?.precio) * cant * (1 - num(r.descuentopct) / 100);
+    const costo = r.costototal != null ? num(r.costototal) : num(r.costounitario ?? p?.costo) * cant;
     const util = r.utilidadbruta != null ? num(r.utilidadbruta) : venta - costo;
-    const fecha = toISO(r.fecha);
-    return {
-      id: String(r.ventaid ?? ''), fecha, mes: fecha ? fecha.slice(0, 7) : 'NA', ciudad: r.ciudad || 'NA', suc: r.sucursal || 'NA',
-      cli: String(r.clienteid ?? ''), seg: c.seg || 'Sin segmento', pid: String(r.productoid ?? ''),
-      prod: p.nombre ? `${p.nombre}${p.tam ? ' (' + p.tam + ')' : ''}` : String(r.productoid), cat: p.cat || 'Sin categoría',
-      cant, venta, costo, util, desc: num(r.descuentopct), canal: r.canal || 'NA', pago: r.formapago || 'NA',
+    if (venta === 0) q.montoCero++; if (venta < 0) q.negativos++;
+    let id = r.ventaid != null && r.ventaid !== '' ? String(r.ventaid) : 'fila' + i;
+    if (ids.has(id)) q.dupId++; ids.add(id);
+    if (!r.sucursal) q.sinSuc++;
+    out.push({
+      id, fecha, mes: fecha.slice(0, 7), ciudad: r.ciudad || 'Sin ciudad', suc: r.sucursal || 'Sin sucursal',
+      cli: cid, seg: c?.seg || 'Sin segmento', pid,
+      prod: p ? `${p.nombre}${p.tam ? ' (' + p.tam + ')' : ''}` : (pid || 'Sin producto'), cat: p?.cat || 'Sin categoría',
+      cant, venta, costo, util, desc: num(r.descuentopct), canal: r.canal || 'Sin canal', pago: r.formapago || 'NA',
       tEnt: num(r.tiempoentregamin), tPrep: num(r.tiempopreparacionmin)
-    };
-  }).filter(v => v.fecha);
+    });
+  });
+  q.validas = out.length;
+  q.ejemplosSinCli = [...sinCliIds].slice(0, 5); q.ejemplosSinProd = [...sinProdIds].slice(0, 5);
+  const f = out.map(v => v.fecha).sort(); q.desde = f[0]; q.hasta = f[f.length - 1];
+  return { list: out, q };
 }
 
-async function fetchBuf(url) { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) throw new Error(url); return r.arrayBuffer(); }
+/* ---------- Carga de datos ---------- */
+async function fetchBuf(url) { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) throw new Error(url.split('/').pop()); return r.arrayBuffer(); }
 async function loadDefault() {
   $('loader').style.display = 'flex';
-  try {
-    const [p, c, v] = await Promise.all([FILES.productos, FILES.clientes, FILES.ventas].map(fetchBuf));
-    S.raw = { p: readWB(p), c: readWB(c), v: readWB(v) };
-    S.src = { p: 'Productos (original)', c: 'Clientes (original)', v: 'Ventas (original)' };
+  try { const cfg = await fetch('data/config.json', { cache: 'no-store' }); if (cfg.ok) FILES = Object.assign(FILES, await cfg.json()); } catch (e) { }
+  const orden = [['p', FILES.productos], ['c', FILES.clientes], ['v', FILES.ventas]];
+  const errores = [];
+  const raw = {}, info = {};
+  await Promise.all(orden.map(async ([t, name]) => {
+    try {
+      const rows = readWB(await fetchBuf('data/' + name));
+      const ev = evaluar(rows, t);
+      if (!rows.length) errores.push(`${TIPOS[t]} (${name}): archivo vacío`);
+      else if (!ev.ok) errores.push(`${TIPOS[t]} (${name}): faltan columnas ${ev.faltan.join(', ')}`);
+      else { raw[t] = canonizar(rows, ev.map); info[t] = ev; }
+    } catch (e) { errores.push(`${TIPOS[t]}: no se encontró data/${name}`); }
+  }));
+  if (raw.v) {
+    S.raw = raw; S.renamed = {}; S.reco = {};
+    for (const t in info) { S.renamed[t] = info[t].renombradas; S.reco[t] = RECO[t].filter(c => !info[t].have.has(c)); }
+    S.src = { p: `Productos (${FILES.productos})`, c: `Clientes (${FILES.clientes})`, v: `Ventas (${FILES.ventas})` };
     rebuild();
-  } catch (e) {
-    $('loader').innerHTML = 'No se pudieron leer los archivos de <code>data/</code>. Abra la app desde un servidor web o cargue los archivos en “Cargar datos”.';
-    setTimeout(() => $('loader').style.display = 'none', 3500); show('data');
   }
+  S.loadErrors = errores; renderQA();
   $('loader').style.display = 'none';
+  if (!raw.v) { show('data'); $('upStatus').innerHTML = `<span class="tag r">✖</span> No se pudo cargar la base de ventas por defecto. Cargue los archivos manualmente.`; }
 }
 function rebuild() {
-  setProductos(S.raw.p || []); setClientes(S.raw.c || []); setVentas(S.raw.v || []);
-  initFilters(); refresh();
-  const f = S.ventas.map(v => v.fecha).sort();
-  $('dsinfo').textContent = `${S.src.v} · ${fmtN(S.ventas.length)} registros · ${f[0] || ''} a ${f[f.length - 1] || ''} · ${S.clientes.size} clientes · ${S.productos.size} productos`;
+  const P = buildProductos(S.raw.p || []), C = buildClientes(S.raw.c || []), V = buildVentas(S.raw.v || [], P.map, C.map);
+  S.productos = P.map; S.clientes = C.map; S.ventas = V.list; S.qa = { p: P.q, c: C.q, v: V.q };
+  initFilters(); refresh(); renderQA();
+  const alerta = qaAlertas().length ? ' · ⚠ revisar calidad de datos en “Cargar datos”' : '';
+  $('dsinfo').textContent = `${S.src.v} · ${fmtN(S.ventas.length)} registros · ${V.q.desde || ''} a ${V.q.hasta || ''} · ${S.clientes.size} clientes · ${S.productos.size} productos${alerta}`;
 }
-async function upload(input, key, label) {
+async function upload(input, slot) {
   const f = input.files[0]; if (!f) return;
-  $('upStatus').textContent = 'Procesando ' + f.name + '…';
+  const st = $('upStatus'); st.textContent = 'Procesando ' + f.name + '…';
   try {
     const rows = readWB(await f.arrayBuffer());
-    if (!rows.length) throw new Error('archivo vacío');
-    S.raw[key] = rows; S.src[key] = `${label} (${f.name})`; rebuild();
-    $('upStatus').textContent = `✔ ${f.name}: ${fmtN(rows.length)} filas cargadas. Indicadores actualizados.`;
-  } catch (e) { $('upStatus').textContent = '✖ Error al leer ' + f.name + ': ' + e.message; }
+    if (!rows.length) throw new Error('el archivo no contiene filas de datos.');
+    let t = slot, ev = evaluar(rows, slot), nota = '';
+    if (!ev.ok || (slot !== 'v' && evaluar(rows, 'v').ok)) {
+      const d = detectarTipo(rows);
+      if (d.tipo && d.tipo !== slot) { t = d.tipo; ev = d.e[t]; nota = ` Se detectó que es un archivo de <b>${TIPOS[t]}</b> (no de ${TIPOS[slot]}) y se cargó como ${TIPOS[t]}.`; }
+      else if (!ev.ok) throw new Error(`no tiene la estructura de ${TIPOS[slot]}. Faltan columnas obligatorias: <b>${ev.faltan.join(', ')}</b>.<br>Columnas encontradas: ${esc(ev.headers.slice(0, 25).join(', '))}`);
+    }
+    const canon = canonizar(rows, ev.map);
+    // Prueba antes de reemplazar: si las ventas resultan inválidas, se conservan los datos anteriores
+    const P = t === 'p' ? buildProductos(canon) : buildProductos(S.raw.p || []);
+    const C = t === 'c' ? buildClientes(canon) : buildClientes(S.raw.c || []);
+    const V = buildVentas(t === 'v' ? canon : (S.raw.v || []), P.map, C.map);
+    if (t === 'v' && !V.list.length) throw new Error(`ninguna fila tiene una fecha válida en la columna Fecha (${fmtN(V.q.sinFecha)} filas descartadas).`);
+    if (t === 'p' && !P.map.size) throw new Error('ninguna fila tiene ProductoID.');
+    if (t === 'c' && !C.map.size) throw new Error('ninguna fila tiene ClienteID.');
+    S.raw[t] = canon; S.src[t] = `${TIPOS[t]} (${f.name})`;
+    S.renamed[t] = ev.renombradas; S.reco = S.reco || {}; S.reco[t] = RECO[t].filter(c => !ev.have.has(c));
+    rebuild();
+    const al = qaAlertas();
+    st.innerHTML = `<span class="tag g">✔</span> <b>${esc(f.name)}</b>: ${fmtN(rows.length)} filas leídas como ${TIPOS[t]}. Indicadores actualizados.${nota}` +
+      (al.length ? ` <span class="tag y">⚠ ${al.length} advertencia(s)</span>, vea el informe de calidad.` : '');
+  } catch (e) {
+    st.innerHTML = `<span class="tag r">✖</span> <b>${esc(f.name)}</b> rechazado: ${e.message}<br>Los datos anteriores se mantienen sin cambios.`;
+  }
   input.value = '';
 }
+function qaAlertas() {
+  const a = [], v = S.qa.v || {}, p = S.qa.p || {}, c = S.qa.c || {};
+  if (!v.leidas) return a;
+  const pct = n => fmtP(n / (v.validas || 1));
+  if (v.sinFecha) a.push(['y', `${fmtN(v.sinFecha)} filas de ventas descartadas por fecha vacía o inválida.`]);
+  if (v.sinCli) a.push([v.sinCli / v.validas > .5 ? 'r' : 'y', `${fmtN(v.sinCli)} ventas (${pct(v.sinCli)}) tienen un ClienteID que no existe en Clientes${v.sinCli === v.validas ? ': <b>los archivos no se relacionan</b>' : ''}. Se muestran como “Sin segmento”. Ej.: ${esc(v.ejemplosSinCli.join(', '))}. Cargue una base de Clientes actualizada.`]);
+  if (v.sinProd) a.push([v.sinProd / v.validas > .5 ? 'r' : 'y', `${fmtN(v.sinProd)} ventas (${pct(v.sinProd)}) tienen un ProductoID que no existe en Productos${v.sinProd === v.validas ? ': <b>los archivos no se relacionan</b>' : ''}. Se muestran como “Sin categoría”. Ej.: ${esc(v.ejemplosSinProd.join(', '))}. Cargue una base de Productos actualizada.`]);
+  if (v.montoCero) a.push(['y', `${fmtN(v.montoCero)} ventas con monto 0 (revise VentaNeta o precios).`]);
+  if (v.negativos) a.push(['y', `${fmtN(v.negativos)} ventas con monto negativo (posibles devoluciones).`]);
+  if (v.dupId) a.push(['y', `${fmtN(v.dupId)} filas con VentaID repetido: se cuentan como una misma transacción.`]);
+  if (v.sinSuc) a.push(['y', `${fmtN(v.sinSuc)} ventas sin sucursal.`]);
+  if (p.dup) a.push(['y', `${fmtN(p.dup)} ProductoID duplicados en Productos (se usa el último).`]);
+  if (c.dup) a.push(['y', `${fmtN(c.dup)} ClienteID duplicados en Clientes (se usa el último).`]);
+  if (c.sinSeg) a.push(['y', `${fmtN(c.sinSeg)} clientes sin segmento.`]);
+  for (const t of ['v', 'c', 'p']) if (S.reco?.[t]?.length) a.push(['y', `${TIPOS[t]}: faltan columnas recomendadas ${S.reco[t].map(lbl).join(', ')}; algunos indicadores quedarán incompletos.`]);
+  return a;
+}
+function renderQA() {
+  const v = S.qa.v || {}, p = S.qa.p || {}, c = S.qa.c || {};
+  let h = '';
+  (S.loadErrors || []).forEach(e => h += `<div class="qa r">✖ ${esc(e)}</div>`);
+  if (v.leidas) {
+    h += `<table><thead><tr><th>Base</th><th>Origen</th><th>Filas leídas</th><th>Registros válidos</th><th>Detalle</th></tr></thead><tbody>
+      <tr><td>Ventas</td><td>${esc(S.src.v)}</td><td>${fmtN(v.leidas)}</td><td>${fmtN(v.validas)}</td><td>${v.desde} a ${v.hasta}</td></tr>
+      <tr><td>Clientes</td><td>${esc(S.src.c || '—')}</td><td>${fmtN(c.leidas || 0)}</td><td>${fmtN(S.clientes.size)}</td><td>${fmtN(c.sinId || 0)} sin ID</td></tr>
+      <tr><td>Productos</td><td>${esc(S.src.p || '—')}</td><td>${fmtN(p.leidas || 0)}</td><td>${fmtN(S.productos.size)}</td><td>${fmtN(p.sinId || 0)} sin ID</td></tr></tbody></table>`;
+    const rel = [['Clientes', v.sinCli], ['Productos', v.sinProd]].map(([n, x]) => `${n}: ${fmtP(1 - x / (v.validas || 1))} de las ventas relacionadas`).join(' · ');
+    h += `<p class="status">Integridad referencial — ${rel}</p>`;
+    const al = qaAlertas();
+    h += al.length ? al.map(([k, t]) => `<div class="qa ${k}">${k === 'r' ? '✖' : '⚠'} ${t}</div>`).join('') : '<div class="qa g">✔ Sin problemas de calidad ni de relación entre las bases.</div>';
+    const ren = Object.entries(S.renamed || {}).filter(([, l]) => l.length).map(([t, l]) => `${TIPOS[t]}: ${esc(l.join(', '))}`);
+    if (ren.length) h += `<p class="status">Columnas reconocidas por sinónimo — ${ren.join(' · ')}</p>`;
+  }
+  $('qa').innerHTML = h;
+}
+
 
 /* ---------- Filtros ---------- */
 const FSEL = { fCiudad: 'ciudad', fSucursal: 'suc', fSegmento: 'seg', fCategoria: 'cat', fProducto: 'prod', fCanal: 'canal' };

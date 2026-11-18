@@ -340,7 +340,9 @@ function renderChips() {
   if (($('fDesde').value && $('fDesde').value !== min) || ($('fHasta').value && $('fHasta').value !== max)) chips.unshift(['fFechas', `Fechas: ${$('fDesde').value} a ${$('fHasta').value}`]);
   $('chips').innerHTML = chips.length
     ? chips.map(([id, t]) => `<span class="chip">${esc(t)}<button data-f="${id}" title="Quitar filtro">×</button></span>`).join('') + '<button class="chip clear" data-f="all">Limpiar todo</button>'
-    : '<span class="hint">💡 Haga clic en una barra o sector de las gráficas para filtrar todo el dashboard por ese valor.</span>';
+    : '<span class="hint">💡 Haga clic en una barra o sector de las gráficas para filtrar todo el dashboard por ese valor. · <a href="#" class="glink">📖 Glosario de indicadores</a></span>';
+  const gl = $('chips').querySelector('.glink');
+  if (gl) gl.onclick = e => { e.preventDefault(); show('about'); setTimeout(() => $('glosario').scrollIntoView({ behavior: 'smooth' }), 50); };
   $('chips').querySelectorAll('[data-f]').forEach(b => b.onclick = () => {
     const id = b.dataset.f;
     if (id === 'all') return $('fReset').click();
@@ -502,6 +504,9 @@ function renderHome() {
     [`Tendencia (últ. ${n} meses)`, tr, v => (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1) + '%', tr >= 0 ? 'up' : 'down'],
     ['Transacciones', K.ntx, fmtN, '']];
   $('heroStats').innerHTML = S.home.map(([t, , , c], i) => `<div class="hstat" style="--d:${300 + i * 120}ms"><div class="n ${c}">—</div><div class="t">${t}</div></div>`).join('');
+  const cnt = k => new Set(all.map(r => r[k])).size, cats = [...new Set(all.map(r => r.cat))];
+  $('heroBiz').innerHTML = [`🍕 Cadena regional de pizzerías · EE. UU.`, `📍 ${cnt('ciudad')} ciudades`, `🏬 ${cnt('suc')} sucursales`,
+    `🧾 ${S.productos.size} productos: ${esc(cats.slice(0, 5).join(', '))}`, `🛵 ${esc([...new Set(all.map(r => r.canal))].join(' · '))}`].map(t => `<span>${t}</span>`).join('');
   $('heroPeriod').textContent = `Periodo analizado: ${S.fMin} a ${S.fMax} · ${fmtN(all.length)} registros de ventas · ${S.clientes.size} clientes · ${S.productos.size} productos`;
   // Curva de ventas mensuales como fondo animado
   const v = meses.map(m => m.venta), mx = Math.max(...v), mn = Math.min(...v) * .85, rg = mx - mn || 1;

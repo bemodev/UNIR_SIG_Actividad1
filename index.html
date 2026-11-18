@@ -67,21 +67,32 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
 .hero-bg .line{fill:none;stroke:#fff;stroke-width:3;vector-effect:non-scaling-stroke;stroke-dasharray:3000;stroke-dashoffset:3000;animation:draw 2.6s ease-out .3s forwards}
 .hero-bg .area{fill:#fff;opacity:.12}
 @keyframes draw{to{stroke-dashoffset:0}}
-.hero-in{position:relative;padding:48px clamp(18px,5vw,64px);max-width:1100px;animation:fadeUp .8s cubic-bezier(.2,.7,.2,1) both}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(8,32,54,.55) 0%,rgba(8,32,54,.25) 60%,rgba(8,32,54,0) 100%),linear-gradient(0deg,rgba(8,32,54,.55) 0%,rgba(8,32,54,0) 45%);pointer-events:none}
+.pizza{position:absolute;right:clamp(-120px,-4vw,-40px);top:50%;width:clamp(260px,34vw,440px);transform:translateY(-50%);filter:drop-shadow(0 18px 40px rgba(0,0,0,.35));animation:spin 90s linear infinite;z-index:0}
+@keyframes spin{from{transform:translateY(-50%) rotate(0)}to{transform:translateY(-50%) rotate(360deg)}}
+.biz{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.biz span{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:14px;padding:3px 10px;font-size:12px;color:#fff}
+.hero-in{position:relative;z-index:1;padding:48px clamp(18px,5vw,64px);max-width:min(840px,72%);animation:fadeUp .8s cubic-bezier(.2,.7,.2,1) both}
 .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#bfe9f8;margin-bottom:10px}
-.hero h2{font-size:clamp(28px,5vw,52px);line-height:1.08;margin:0 0 14px;font-weight:700}.hero h2 span{color:#9fe3ff}
+.hero h2{font-size:clamp(26px,3.8vw,48px);line-height:1.08;margin:0 0 14px;font-weight:700}.hero h2 span{color:#9fe3ff}
 .hero p{font-size:clamp(14px,1.6vw,17px);max-width:720px;color:#e3f4fb;margin:0 0 26px;line-height:1.55}
 .hero-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:8px}
 .hstat{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:14px 16px;backdrop-filter:blur(4px);animation:fadeUp .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d)}
-.hstat .n{font-size:clamp(22px,3vw,34px);font-weight:700;font-variant-numeric:tabular-nums}.hstat .t{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#cdeefa}
+.hstat .n{font-size:clamp(18px,2.1vw,30px);white-space:nowrap;font-weight:700;font-variant-numeric:tabular-nums}.hstat .t{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#cdeefa}
 .hstat .n.down{color:#ffb4ae}.hstat .n.up{color:#a6f0c6}
 .hero-period{font-size:12px;color:#bfe9f8;margin-bottom:22px}
 .hero-cta{display:flex;flex-wrap:wrap;gap:10px}
-.cta{border:1px solid rgba(255,255,255,.6);background:transparent;color:#fff;border-radius:24px;padding:11px 18px;font-weight:600;cursor:pointer;transition:background .2s,transform .2s}
-.cta:hover{background:rgba(255,255,255,.15);transform:translateY(-2px)}.cta.main{background:#fff;color:var(--acc-d);border-color:#fff}.cta.main:hover{background:#e8f7fd}
+.cta{border:1px solid rgba(255,255,255,.75);background:rgba(8,32,54,.72);color:#fff;border-radius:24px;padding:11px 18px;font-weight:600;cursor:pointer;transition:background .2s,transform .2s;backdrop-filter:blur(6px);box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.cta:hover{background:rgba(8,32,54,.9);transform:translateY(-2px)}
+.hstat{background:rgba(8,32,54,.45)!important}.cta.main{background:#fff;color:var(--acc-d);border-color:#fff}.cta.main:hover{background:#e8f7fd}
 .hero-foot{margin-top:26px;font-size:11px;color:#9fd6ea;letter-spacing:.05em}
+@media(max-width:900px){.hero-in{max-width:100%}.pizza{opacity:.18;right:-90px}}
 @media(max-width:700px){.hero-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (prefers-reduced-motion:reduce){.pizza{animation:none}}
 @media (prefers-reduced-motion:reduce){.hero-bg .line{animation:none;stroke-dashoffset:0}.hero-in,.hstat{animation:none}}
+.gloss{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 24px}
+.gloss dl{margin:0}.gloss dt{font-weight:700;color:var(--acc-d);margin-top:8px}.gloss dd{margin:2px 0 0;font-size:13px;color:var(--ink);line-height:1.45}
+@media(max-width:700px){.gloss{grid-template-columns:1fr}}
 .ins.wide{grid-column:1/-1}
 .ins-col{display:flex;flex-direction:column;gap:8px;min-width:0}
 .ins-h{font-size:12px;font-weight:700;color:var(--acc-d);text-transform:uppercase;letter-spacing:.04em;padding:2px 2px 0}
@@ -147,9 +158,18 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
   <div class="view" id="v-home">
     <section class="hero">
       <svg class="hero-bg" viewBox="0 0 1000 300" preserveAspectRatio="none" aria-hidden="true"><path id="heroArea" class="area"/><path id="heroLine" class="line"/></svg>
+      <svg class="pizza" viewBox="0 0 200 200" aria-hidden="true">
+        <circle cx="100" cy="100" r="96" fill="#d98b3a"/><circle cx="100" cy="100" r="84" fill="#c0392b"/>
+        <circle cx="100" cy="100" r="80" fill="#f5c94c"/>
+        <g fill="#f8dc7c" opacity=".8"><circle cx="70" cy="60" r="10"/><circle cx="135" cy="80" r="12"/><circle cx="80" cy="140" r="11"/><circle cx="140" cy="140" r="9"/><circle cx="105" cy="105" r="8"/></g>
+        <g fill="#b22a1f"><circle cx="100" cy="45" r="11"/><circle cx="150" cy="105" r="11"/><circle cx="55" cy="100" r="11"/><circle cx="110" cy="155" r="11"/><circle cx="70" cy="75" r="9"/><circle cx="128" cy="62" r="9"/><circle cx="125" cy="125" r="10"/><circle cx="75" cy="128" r="9"/></g>
+        <g fill="#2f7d32"><ellipse cx="90" cy="95" rx="5" ry="3" transform="rotate(30 90 95)"/><ellipse cx="145" cy="125" rx="5" ry="3"/><ellipse cx="60" cy="140" rx="5" ry="3" transform="rotate(-20 60 140)"/><ellipse cx="115" cy="80" rx="5" ry="3" transform="rotate(60 115 80)"/></g>
+        <g stroke="#d98b3a" stroke-width="2.5" opacity=".7"><line x1="100" y1="4" x2="100" y2="196"/><line x1="4" y1="100" x2="196" y2="100"/><line x1="32" y1="32" x2="168" y2="168"/><line x1="168" y1="32" x2="32" y2="168"/></g>
+      </svg>
       <div class="hero-in">
         <div class="eyebrow">San Francisco Crust Pizza · Sistema Inteligente de Apoyo a la Toma de Decisiones</div>
-        <h2>De reportes en Excel a<br><span>decisiones basadas en datos</span></h2>
+        <div class="biz" id="heroBiz"></div>
+        <h2>De reportes en Excel a <span>decisiones basadas en datos</span></h2>
         <p>Ventas, clientes y productos integrados en un dashboard interactivo con filtros, hallazgos automáticos y un asistente de IA que propone recomendaciones comerciales.</p>
         <div class="hero-stats" id="heroStats"></div>
         <div class="hero-period" id="heroPeriod"></div>
@@ -274,6 +294,36 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
         <li><b>Actualización automática:</b> al cargar una nueva base de ventas, todos los indicadores y gráficas se recalculan sin modificar el código.</li>
         <li><b>Asistente de IA:</b> genera recomendaciones comerciales a partir de los datos del dashboard. Estas deben ser analizadas críticamente por el equipo antes de incorporarlas a las conclusiones.</li>
       </ul>
+      <h3 style="margin-top:16px" id="glosario">Glosario de indicadores y términos</h3>
+      <div class="gloss">
+        <dl>
+          <dt>Ventas totales</dt><dd>Suma de la venta neta (después de descuentos) del periodo y filtros seleccionados.</dd>
+          <dt>Utilidad bruta</dt><dd>Ventas totales − costo total de los productos vendidos.</dd>
+          <dt>Margen bruto</dt><dd>Utilidad bruta ÷ ventas totales. Indica cuántos centavos de cada dólar vendido quedan tras el costo del producto.</dd>
+          <dt>Ticket promedio</dt><dd>Ventas totales ÷ número de transacciones: gasto medio por compra.</dd>
+          <dt>N.º clientes</dt><dd>Clientes distintos que compraron al menos una vez en el periodo.</dd>
+          <dt>N.º transacciones</dt><dd>Ventas distintas (VentaID) registradas.</dd>
+          <dt>Unidades vendidas</dt><dd>Suma de las cantidades vendidas.</dd>
+          <dt>Variación ▲▼</dt><dd>Cambio frente al periodo anterior de igual duración (o, si no hay datos previos, 2.ª mitad vs 1.ª mitad del periodo). Verde = mejora, rojo = empeora.</dd>
+          <dt>pp (puntos porcentuales)</dt><dd>Diferencia absoluta entre dos porcentajes: un margen que pasa de 60 % a 59 % baja 1 pp.</dd>
+          <dt>Tendencia de ventas</dt><dd>Ventas de los últimos 12 meses frente a los 12 meses anteriores.</dd>
+          <dt>Mini gráfica (sparkline)</dt><dd>Línea pequeña bajo cada KPI con su evolución mensual.</dd>
+        </dl>
+        <dl>
+          <dt>Sucursal</dt><dd>Restaurante físico de la cadena; cada ciudad puede tener varias.</dd>
+          <dt>Segmento de cliente</dt><dd>Grupo de clientes con características similares (p. ej. Estudiante, Profesional, Familia, Corporativo).</dd>
+          <dt>Canal</dt><dd>Forma en que se realizó la venta: Restaurante, Pickup (recoger) o Delivery (a domicilio).</dd>
+          <dt>Cliente activo</dt><dd>Cliente marcado como activo en la base de clientes (sigue comprando).</dd>
+          <dt>Motivo de pérdida</dt><dd>Razón registrada por la que un cliente dejó de comprar (precio, tiempo de espera, mudanza…).</dd>
+          <dt>NPS</dt><dd>Net Promoter Score: probabilidad declarada de recomendar la marca (escala 0–10).</dd>
+          <dt>Tx/cliente</dt><dd>Transacciones por cliente: frecuencia de compra en el periodo.</dd>
+          <dt>Matriz de rentabilidad</dt><dd>Gráfico de burbujas de productos: volumen (eje X), margen % (eje Y) y utilidad (tamaño).</dd>
+          <dt>Filtro cruzado</dt><dd>Al hacer clic en una barra o sector, todo el dashboard se filtra por ese valor.</dd>
+          <dt>Hallazgos clave</dt><dd>Mejor y peor sucursal, producto y segmento calculados automáticamente con los filtros activos.</dd>
+          <dt>Integridad referencial</dt><dd>% de ventas cuyo cliente y producto existen en sus bases maestras.</dd>
+          <dt>IA generativa (LLM)</dt><dd>Modelo de lenguaje que redacta recomendaciones a partir del resumen del dashboard; deben validarse críticamente.</dd>
+        </dl>
+      </div>
       <h3 style="margin-top:16px">Ficha técnica</h3>
       <div style="overflow-x:auto"><table class="tech">
         <thead><tr><th>Componente</th><th>Tecnología</th><th>Uso en el proyecto</th><th>Licencia / costo</th></tr></thead>
@@ -296,6 +346,6 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
     </div>
   </div>
 </main>
-<script src="app.js?v=16"></script>
+<script src="app.js?v=18"></script>
 </body>
 </html>

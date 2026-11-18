@@ -157,7 +157,10 @@ function table(el, cols, data) {
 const mTag = m => `<span class="tag ${m >= .6 ? 'g' : m >= .5 ? 'y' : 'r'}">${fmtP(m)}</span>`;
 
 function refresh() {
-  applyFilters();
+  applyFilters(); S.ver = (S.ver || 0) + 1;
+  const aviso = '<p class="status">Los filtros o los datos cambiaron. Vuelva a generar las recomendaciones para el nuevo contexto.</p>';
+  if ($('recoLocal').innerHTML) $('recoLocal').innerHTML = aviso;
+  if ($('recoLLM').innerHTML) $('recoLLM').innerHTML = aviso;
   const R = S.rows, K = kpis(R);
   const items = [['Ventas totales', fmt$(K.venta)], ['Utilidad bruta', fmt$(K.util)], ['Margen bruto', fmtP(K.margen)], ['Ticket promedio', fmt$2(K.ticket)],
     ['N.º clientes', fmtN(K.ncli)], ['N.º transacciones', fmtN(K.ntx)], ['Unidades vendidas', fmtN(K.cant)]];
@@ -279,11 +282,13 @@ async function consultarLLM() {
   const key = $('apiKey').value.trim();
   if (!key && !PROXY_URL) { $('recoLLM').textContent = 'Ingrese su API key de Anthropic.'; return; }
   $('recoLLM').textContent = 'Consultando a la IA… (puede tardar 20-30 s)';
+  const ver = S.ver;
   if (!key) {
     try {
       const r = await fetch(PROXY_URL, { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ model: $('model').value, pregunta: $('q').value, contexto: contextoIA() }) });
       const j = await r.json();
+      if (ver !== S.ver) return; // los filtros cambiaron mientras se esperaba la respuesta
       if (!r.ok) { $('recoLLM').textContent = 'Error: ' + (j.error?.message || r.status); return; }
       const txt = j.content.map(c => c.text || '').join('\n') + `\n\n— Modelo: ${j.modelo || 'IA'}`;
       $('recoLLM').innerHTML = txt.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch])).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/^#+\s*(.*)$/gm, '<b>$1</b>');

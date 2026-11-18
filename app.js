@@ -10,7 +10,7 @@ const fmt$ = v => '$' + Math.round(v).toLocaleString('en-US');
 const fmt$2 = v => '$' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtN = v => Math.round(v).toLocaleString('en-US');
 const fmtP = v => (v * 100).toFixed(1) + '%';
-const PAL = ['#c0392b', '#2c7be5', '#1a9e5c', '#d98a00', '#7b3fbf', '#00a3a3', '#e05297', '#5d6d7e', '#8e5b2d', '#3d9970'];
+const PAL = ['#0098cd', '#1b365d', '#f0a202', '#5bb8a6', '#d0342c', '#7c8a96', '#8ccbe6', '#a05195', '#3d9970', '#e07a5f'];
 
 /* ---------- Lectura de archivos ---------- */
 const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
@@ -278,7 +278,7 @@ const PROXY_URL = 'https://sfcp-ia.dariojose-betan0901.workers.dev';
 async function consultarLLM() {
   const key = $('apiKey').value.trim();
   if (!key && !PROXY_URL) { $('recoLLM').textContent = 'Ingrese su API key de Anthropic.'; return; }
-  $('recoLLM').textContent = 'Consultando a Claude…';
+  $('recoLLM').textContent = 'Consultando a la IA… (puede tardar 20-30 s)';
   if (!key) {
     try {
       const r = await fetch(PROXY_URL, { method: 'POST', headers: { 'content-type': 'application/json' },
@@ -306,7 +306,7 @@ async function consultarLLM() {
 
 /* ---------- Eventos ---------- */
 function show(v) { document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); document.querySelectorAll('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + v));
-  const datos = v === 'data'; $('filters').style.display = datos ? 'none' : ''; $('kpis').style.display = datos ? 'none' : '';
+  const datos = v === 'data' || v === 'about'; $('filters').style.display = datos ? 'none' : ''; $('kpis').style.display = datos ? 'none' : '';
   window.scrollTo(0, 0); }
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => show(b.dataset.v));
 ['fDesde', 'fHasta', ...Object.keys(FSEL)].forEach(id => $(id).addEventListener('change', () => { if (id === 'fCiudad' || id === 'fCategoria') cascade(); refresh(); }));

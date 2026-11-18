@@ -4,17 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SF Crust Pizza BI</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-:root{--bg:#f4f5f7;--card:#fff;--ink:#1d2433;--mute:#667085;--line:#e4e7ec;--acc:#c0392b;--acc2:#2c7be5;--ok:#1a9e5c;--warn:#d98a00}
+:root{--bg:#f2f6f9;--card:#fff;--ink:#333333;--mute:#6b7680;--line:#dfe6ec;--acc:#0098cd;--acc-d:#006f96;--acc2:#0098cd;--bad:#d0342c;--ok:#1a9e5c;--warn:#d98a00}
 *{box-sizing:border-box}
-body{margin:0;font-family:Segoe UI,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
-header{background:#1d2433;color:#fff;padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
-header h1{font-size:18px;margin:0}header small{color:#aab2c5}
+body{margin:0;font-family:'Open Sans',Segoe UI,system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+header{background:linear-gradient(90deg,var(--acc-d),var(--acc));color:#fff;padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+header h1{font-size:18px;margin:0;font-weight:700}header small{color:#d6eef8}
+.brand{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#d6eef8;margin-bottom:2px}
 .tabs{display:flex;gap:4px;flex-wrap:wrap}
-.tabs button{background:transparent;color:#cfd5e3;border:1px solid #3a4258;border-radius:6px;padding:6px 12px;cursor:pointer}
-.tabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.tabs button{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.45);border-radius:20px;padding:6px 14px;cursor:pointer}
+.tabs button:hover{background:rgba(255,255,255,.15)}
+.tabs button.on{background:#fff;border-color:#fff;color:var(--acc-d);font-weight:600}
+h3{color:var(--acc-d)}
+.about h2{color:var(--acc-d);margin:0 0 6px}.about ul{margin:6px 0 0;padding-left:20px;line-height:1.7}
+.about .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:12px 0}
+.about .meta div{background:#eaf6fb;border-left:4px solid var(--acc);border-radius:6px;padding:10px}
+.about .meta b{display:block;font-size:11px;text-transform:uppercase;color:var(--mute)}
 main{padding:16px;max-width:1500px;margin:auto}
 .filters{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end;margin-bottom:14px}
 .filters label{font-size:11px;color:var(--mute);text-transform:uppercase;display:block;margin-bottom:3px}
@@ -36,7 +44,7 @@ th:first-child,td:first-child{text-align:left}
 th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;position:sticky;top:0;background:#fff}
 .tw{max-height:420px;overflow:auto}
 .tag{padding:2px 7px;border-radius:10px;font-size:11px;font-weight:600}
-.g{background:#e3f6ec;color:var(--ok)}.r{background:#fde8e6;color:var(--acc)}.y{background:#fff4dc;color:var(--warn)}
+.g{background:#e3f6ec;color:var(--ok)}.r{background:#fde8e6;color:var(--bad)}.y{background:#fff4dc;color:var(--warn)}
 .view{display:none}.view.on{display:block}
 .status{font-size:12px;color:var(--mute);margin:6px 0}
 .drop{border:2px dashed var(--line);border-radius:10px;padding:18px;text-align:center;margin:8px 0}
@@ -50,7 +58,7 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
 <body>
 <div id="loader">Cargando bases de datos…</div>
 <header>
-  <div><h1>🍕 San Francisco Crust Pizza · Sistema Inteligente de Apoyo a Decisiones</h1><small id="dsinfo"></small></div>
+  <div><div class="brand">UNIR · Máster en Dirección Comercial y Ventas · Sistemas de Información para la Toma de Decisiones Comerciales · Grupo 5 – Lote 6</div><h1>🍕 San Francisco Crust Pizza · Sistema Inteligente de Apoyo a Decisiones</h1><small id="dsinfo"></small></div>
   <nav class="tabs">
     <button data-v="dash" class="on">Dashboard</button>
     <button data-v="prod">Productos</button>
@@ -58,6 +66,7 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
     <button data-v="cli">Clientes</button>
     <button data-v="ia">Asistente IA</button>
     <button data-v="data">Cargar datos</button>
+    <button data-v="about">Acerca de</button>
   </nav>
 </header>
 <main>
@@ -150,7 +159,38 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
       <p class="status">También puede reemplazar los archivos de la carpeta <code>data/</code> del servidor con el mismo nombre: la aplicación los leerá en la siguiente carga.</p>
     </div>
   </div>
+
+  <div class="view" id="v-about">
+    <div class="card about">
+      <h2>Acerca de este proyecto</h2>
+      <p>Aplicación desarrollada como parte de la <b>Actividad 1: Desarrollo de un Sistema Inteligente de Apoyo a la Toma de Decisiones con IA</b> de la asignatura Sistemas de Información para la Toma de Decisiones Comerciales, del Máster Universitario en Dirección Comercial y Ventas de la Universidad Internacional de La Rioja (UNIR).</p>
+      <div class="meta">
+        <div><b>Programa</b>Máster Universitario en Dirección Comercial y Ventas (PS) – PER 16768 – Octubre 2026</div>
+        <div><b>Asignatura</b>Sistemas de Información para la Toma de Decisiones Comerciales</div>
+        <div><b>Equipo</b>Grupo 5 – Lote 6</div>
+        <div><b>Profesor</b>Alberto Francesena Alvarez</div>
+      </div>
+      <h3>Integrantes</h3>
+      <ul>
+        <li>Rodríguez Gallegos, Manuel Alejandro</li>
+        <li>Sánchez Paredes, Margot Elisabeth</li>
+        <li>Torres Lopez, Madeline Nicole</li>
+        <li>Betancourt Garces, Dario Jose</li>
+        <li>Urbina López, José Andrés</li>
+      </ul>
+      <h3 style="margin-top:16px">Sobre el dashboard</h3>
+      <p>San Francisco Crust Pizza, cadena regional de pizzerías en Estados Unidos, tomaba sus decisiones a partir de reportes en Excel. Este dashboard web integra sus bases de <b>Ventas, Clientes y Productos</b> para monitorizar los indicadores comerciales y apoyar la toma de decisiones:</p>
+      <ul>
+        <li><b>Dashboard ejecutivo:</b> ventas totales, utilidad bruta, margen bruto, ticket promedio, número de clientes y de transacciones, productos más vendidos y ventas por ciudad, sucursal y segmento de cliente.</li>
+        <li><b>Visualización:</b> gráficas de tendencia, rankings, matriz de rentabilidad de productos y análisis por sucursal y segmento.</li>
+        <li><b>Filtros:</b> fecha, ciudad, sucursal, segmento de cliente, categoría, producto y canal.</li>
+        <li><b>Actualización automática:</b> al cargar una nueva base de ventas, todos los indicadores y gráficas se recalculan sin modificar el código.</li>
+        <li><b>Asistente de IA:</b> genera recomendaciones comerciales a partir de los datos del dashboard. Estas deben ser analizadas críticamente por el equipo antes de incorporarlas a las conclusiones.</li>
+      </ul>
+      <p class="status">Proyecto académico. Datos de uso exclusivamente educativo.</p>
+    </div>
+  </div>
 </main>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

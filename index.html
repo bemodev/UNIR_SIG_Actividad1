@@ -147,6 +147,9 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
 .hstat .n.down{color:#ffb4ae}.hstat .n.up{color:#a6f0c6}
 /* En Inicio la cabecera se limpia: la portada ya muestra la línea académica y el periodo analizado */
 body.is-home header .brand,body.is-home #dsinfo{display:none}
+/* La portada ocupa todo el alto disponible bajo la cabecera, sin franja blanca abajo */
+body.is-home .hero{min-height:calc(100dvh - var(--hdr,100px) - 40px)!important}
+body.is-home main{padding-bottom:16px}
 /* Portada compacta: que entre completa en una pantalla de portátil sin scroll */
 .hero{min-height:0!important}
 .hero-in{padding:22px clamp(18px,4vw,48px)!important}
@@ -465,6 +468,6 @@ body.is-home header .brand,body.is-home #dsinfo{display:none}
     </div>
   </div>
 </main>
-<script src="app.js?v=31"></script>
+<script src="app.js?v=32"></script>
 </body>
 </html>

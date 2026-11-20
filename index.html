@@ -145,6 +145,24 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
 .hstat{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:14px 16px;backdrop-filter:blur(4px);animation:fadeUp .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d)}
 .hstat .n{font-size:clamp(18px,2.1vw,30px);white-space:nowrap;font-weight:700;font-variant-numeric:tabular-nums}.hstat .t{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#cdeefa}
 .hstat .n.down{color:#ffb4ae}.hstat .n.up{color:#a6f0c6}
+/* Portada compacta: que entre completa en una pantalla de portátil sin scroll */
+.hero{min-height:0!important}
+.hero-in{padding:22px clamp(18px,4vw,48px)!important}
+.eyebrow{margin-bottom:6px!important}.biz{margin-bottom:10px!important}.biz span{padding:2px 9px!important;font-size:11.5px!important}
+.hero h2{font-size:clamp(24px,3vw,40px)!important;margin:0 0 8px!important}
+.hero p{font-size:14px!important;margin:0 0 12px!important;max-width:760px!important}
+.hero-stats{margin-bottom:6px!important;gap:10px!important}.hstat{padding:9px 14px!important}.hstat .n{font-size:clamp(18px,1.9vw,26px)!important}
+.hero-period{margin-bottom:10px!important}.cta{padding:8px 16px!important}.hero-foot{margin-top:12px!important}
+@media(max-height:720px) and (min-width:701px){.hero p{display:none}.biz{display:none!important}}
+.hero-tk{display:flex;align-items:center;gap:14px;background:rgba(8,32,54,.6);border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:9px 14px;margin:6px 0 2px;min-height:50px;backdrop-filter:blur(6px)}
+.tk-lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#bfe9f8;white-space:nowrap}
+.tk-txt{flex:1;font-size:clamp(13px,1.4vw,15px);line-height:1.45;transition:opacity .3s;min-width:0}.tk-ic{margin-right:8px}
+.tk-go{color:#9fe3ff;font-size:13px;font-weight:600;white-space:nowrap;text-decoration:none}.tk-go:hover{text-decoration:underline}
+.tk-list{margin:0;padding-left:18px;font-size:13px;line-height:1.6}.tk-list a{color:#9fe3ff}
+.hero-dots{display:flex;gap:6px;margin:6px 0 10px}
+.hero-dots button{width:8px;height:8px;border-radius:4px;border:0;padding:0;background:rgba(255,255,255,.35);cursor:pointer;transition:width .25s,background .25s}
+.hero-dots button.on{width:22px;background:#fff}
+@media(max-width:700px){.hero-tk{flex-direction:column;align-items:flex-start;gap:6px}}
 .hero-period{font-size:12px;color:#bfe9f8;margin-bottom:22px}
 .hero-cta{display:flex;flex-wrap:wrap;gap:10px}
 .cta{border:1px solid rgba(255,255,255,.75);background:rgba(8,32,54,.72);color:#fff;border-radius:24px;padding:11px 18px;font-weight:600;cursor:pointer;transition:background .2s,transform .2s;backdrop-filter:blur(6px);box-shadow:0 4px 14px rgba(0,0,0,.25)}
@@ -251,6 +269,8 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
         <h2>De reportes en Excel a <span>decisiones basadas en datos</span></h2>
         <p>Ventas, clientes y productos integrados en un dashboard interactivo con filtros, hallazgos automáticos y un asistente de IA que propone recomendaciones comerciales.</p>
         <div class="hero-stats" id="heroStats"></div>
+        <div class="hero-tk" id="heroTk" tabindex="0" hidden></div>
+        <div class="hero-dots" id="heroDots" hidden></div>
         <div class="hero-period" id="heroPeriod"></div>
         <div class="hero-cta">
           <button class="cta main" data-go="dash">📊 Ver dashboard</button>
@@ -444,6 +464,6 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
     </div>
   </div>
 </main>
-<script src="app.js?v=29"></script>
+<script src="app.js?v=30"></script>
 </body>
 </html>

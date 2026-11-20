@@ -587,7 +587,59 @@ function renderHome() {
   const pts = v.map((y, i) => `${(i / Math.max(1, v.length - 1)) * 1000},${(290 - ((y - mn) / rg) * 250).toFixed(1)}`);
   $('heroLine').setAttribute('d', 'M' + pts.join(' L'));
   $('heroArea').setAttribute('d', 'M0,300 L' + pts.join(' L') + ' L1000,300 Z');
+  renderDatosDestacados(all, meses, n);
   animHome();
+}
+
+/* ---------- Portada: franja rotativa de datos destacados (calculados de toda la base) ---------- */
+function renderDatosDestacados(all, meses, n) {
+  const pc = v => (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1) + '%';
+  const kU = new Set(meses.slice(-n).map(m => m.k)), kA = new Set(meses.slice(-2 * n, -n).map(m => m.k));
+  const U = kpis(all.filter(r => kU.has(r.mes))), A = kpis(all.filter(r => kA.has(r.mes)));
+  const D = [];
+  if (A.ntx && U.ntx) {
+    const rTx = (U.ntx - A.ntx) / A.ntx, rTk = (U.ticket - A.ticket) / A.ticket;
+    D.push(['📉', Math.abs(rTx) >= Math.abs(rTk)
+      ? `Las transacciones variaron ${pc(rTx)} mientras el ticket cambió ${pc(rTk)}: la tendencia la explica el volumen de compras, no el precio.`
+      : `El ticket promedio varió ${pc(rTk)} y las transacciones ${pc(rTx)}: la tendencia la explica el gasto por compra.`, 'dash', 'Ver dashboard']);
+  }
+  if (A.descM) D.push(['🏷️', `Los descuentos otorgados variaron ${pc((U.descM - A.descM) / A.descM)} en los últimos ${n} meses, mientras las ventas variaron ${pc((U.venta - A.venta) / A.venta)}.`, 'dash', 'Ver dashboard']);
+  if (A.nEnt && U.nEnt) { const dm = U.entrega - A.entrega; D.push(['🛵', `La entrega a domicilio es ${Math.abs(dm).toFixed(1)} min ${dm >= 0 ? 'más lenta' : 'más rápida'} que en el periodo anterior (${U.entrega.toFixed(1)} min de media).`, 'suc', 'Ver sucursales']); }
+  const inV = all.filter(r => r.inact).reduce((s, r) => s + r.venta, 0);
+  if (inV) D.push(['⚠️', `Se venden ${fmt$(inV)} (${fmtP(inV / (kpis(all).venta || 1))}) en productos marcados como inactivos en el catálogo.`, 'prod', 'Ver productos']);
+  const cats = group(all, 'cat').filter(c => c.venta > 0);
+  if (cats.length > 1) {
+    const cM = [...cats].sort((a, b) => b.margen - a.margen)[0], cV = [...cats].sort((a, b) => a.venta - b.venta)[0];
+    D.push(['🥗', cM.k === cV.k ? `${esc(cM.k)} tiene el mayor margen (${fmtP(cM.margen)}) pero las menores ventas: oportunidad para impulsarla.` : `${esc(cM.k)} es la categoría de mayor margen (${fmtP(cM.margen)}).`, 'prod', 'Ver productos']);
+  }
+  const RG = e => !e ? null : e < 25 ? 'menores de 25 años' : e < 35 ? 'de 25 a 34 años' : e < 45 ? 'de 35 a 44 años' : e < 55 ? 'de 45 a 54 años' : 'de 55 años o más';
+  const ed = group(all.filter(r => r.edad), r => RG(r.edad)).sort((a, b) => b.venta - a.venta)[0], tot = kpis(all).venta || 1;
+  if (ed) D.push(['👥', `Los clientes ${ed.k} generan el ${fmtP(ed.venta / tot)} de las ventas, el grupo de edad que más compra.`, 'cli', 'Ver clientes']);
+  S.destacados = D;
+  const box = $('heroTk'), dots = $('heroDots');
+  if (!D.length) { box.hidden = true; dots.hidden = true; return; }
+  box.hidden = false;
+  if (REDUCED) { // sin rotación: lista completa
+    dots.hidden = true;
+    box.innerHTML = `<div class="tk-lbl">💡 Datos destacados</div><ul class="tk-list">${D.map(([i, t, v, l]) => `<li>${i} ${t} <a href="#" data-go="${v}">${l} →</a></li>`).join('')}</ul>`;
+    box.querySelectorAll('[data-go]').forEach(a => a.onclick = e => { e.preventDefault(); show(a.dataset.go); });
+    return;
+  }
+  dots.hidden = false;
+  dots.innerHTML = D.map((_, k) => `<button type="button" aria-label="Dato destacado ${k + 1} de ${D.length}"></button>`).join('');
+  box.innerHTML = `<div class="tk-lbl">💡 Dato destacado <span id="tkN"></span></div><div class="tk-txt" id="tkTxt" aria-live="polite"></div><a href="#" class="tk-go" id="tkGo"></a>`;
+  let i = 0, paused = false;
+  const set = k => {
+    i = k; const [ic, t, v, l] = D[k], txt = $('tkTxt');
+    txt.style.opacity = 0;
+    setTimeout(() => { txt.innerHTML = `<span class="tk-ic">${ic}</span>${t}`; txt.style.opacity = 1; }, 180);
+    $('tkN').textContent = `${k + 1}/${D.length}`; $('tkGo').textContent = l + ' →'; $('tkGo').onclick = e => { e.preventDefault(); show(v); };
+    [...dots.children].forEach((b, j) => { b.classList.toggle('on', j === k); b.setAttribute('aria-current', j === k); });
+  };
+  [...dots.children].forEach((b, k) => b.onclick = () => { set(k); restart(); });
+  const restart = () => { clearInterval(S.tkTimer); S.tkTimer = setInterval(() => { if (!paused && $('v-home').classList.contains('on')) set((i + 1) % D.length); }, 5000); };
+  box.onmouseenter = box.onfocusin = () => paused = true; box.onmouseleave = box.onfocusout = () => paused = false;
+  set(0); restart();
 }
 function animHome() {
   if (!S.home || !$('v-home').classList.contains('on')) return;

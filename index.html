@@ -80,6 +80,16 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
 .person.prof{border-color:var(--acc);background:#f2fafd}.person.prof .av{background:var(--acc);color:#fff}
 .feat{display:flex;flex-direction:column;gap:3px;text-align:left;cursor:pointer;font:inherit;color:inherit}
 .feat i{font-style:normal;font-size:22px}.feat b{font-size:14px;color:var(--acc-d)}.feat span{font-size:12.5px;color:var(--mute)}
+[hidden]{display:none!important}
+.glbtn{background:#fff!important;color:var(--acc-d)!important;border-color:#fff!important;font-weight:600;margin-left:6px}
+.gl-backdrop{position:fixed;inset:0;background:rgba(8,32,54,.35);z-index:40;animation:fadeIn .2s}
+.gl-panel{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);z-index:41;background:var(--card);box-shadow:-12px 0 32px rgba(0,0,0,.18);display:flex;flex-direction:column;padding:18px max(16px,env(safe-area-inset-right,0px)) 12px 18px;overflow:hidden;animation:slideIn .25s ease-out}
+.gl-panel #glList{overflow-y:auto;flex:1;margin:0 -4px;padding:0 4px}
+.gl-head{display:flex;align-items:center;gap:8px;margin-bottom:10px}.gl-head h2{font-size:17px;margin:0;flex:1;color:var(--acc-d)}
+.gl-head button{border:0;background:#eef1f6;border-radius:50%;width:32px;height:32px;font-size:20px;cursor:pointer;line-height:1}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:none}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.gl-panel,.gl-backdrop{animation:none}}
+.kpi .l .i{cursor:pointer}
 .gl-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
 .gl-tools input{flex:1;min-width:200px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit}
 .gl-cats{display:flex;gap:6px;flex-wrap:wrap}
@@ -189,8 +199,19 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
     <button data-v="ia">Asistente IA</button>
     <button data-v="data">Cargar datos</button>
     <button data-v="about">Acerca de</button>
+    <button type="button" class="glbtn" id="btnGl" aria-haspopup="dialog" aria-controls="glPanel">📖 Glosario</button>
   </nav>
 </header>
+<div class="gl-backdrop" id="glBack" hidden></div>
+<aside class="gl-panel" id="glPanel" role="dialog" aria-modal="true" aria-labelledby="glTitle" hidden>
+  <div class="gl-head"><h2 id="glTitle">📖 Glosario de indicadores y términos</h2><button type="button" id="glClose" aria-label="Cerrar glosario">×</button></div>
+  <div class="gl-tools">
+    <input type="search" id="glQ" placeholder="Buscar un término, por ejemplo margen" aria-label="Buscar en el glosario">
+    <div class="gl-cats" id="glCats"></div>
+  </div>
+  <div id="glList"></div>
+  <p class="status" id="glCount"></p>
+</aside>
 <main>
   <section class="filters" id="filters">
     <div><label>Fecha desde</label><input type="date" id="fDesde"></div>
@@ -346,7 +367,6 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
         <a href="#ab-proyecto" data-ab="ab-proyecto">El proyecto</a>
         <a href="#ab-equipo" data-ab="ab-equipo">Equipo</a>
         <a href="#ab-funciones" data-ab="ab-funciones">Qué puedes hacer</a>
-        <a href="#glosario" data-ab="glosario">Glosario</a>
         <a href="#ab-ficha" data-ab="ab-ficha">Ficha técnica</a>
       </nav>
 
@@ -369,22 +389,12 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
 
       <h3 class="ab-h" id="ab-funciones">Qué puedes hacer <small>clic para ir a cada sección</small></h3>
       <div class="ab-g3">
-        <button class="ab-card feat" data-go="dash"><i>📊</i><b>Ver KPI y hallazgos</b><span>8 indicadores, mejor y peor sucursal, producto y segmento</span></button>
-        <button class="ab-card feat" data-go="dash"><i>🎯</i><b>Filtrar con un clic</b><span>Clic en barras o sectores; chips para quitar filtros</span></button>
+        <button class="ab-card feat" data-go="dash"><i>📊</i><b>Ver KPI y filtrar con un clic</b><span>8 indicadores, hallazgos y filtro al hacer clic en las gráficas</span></button>
+        <button class="ab-card feat" data-gl="1"><i>📖</i><b>Consultar el glosario</b><span>Definición y fórmula de cada indicador, desde cualquier pestaña</span></button>
         <button class="ab-card feat" data-go="dash"><i>📅</i><b>Comparar 2024 vs 2025</b><span>Tabla de variaciones y ventas por mes</span></button>
         <button class="ab-card feat" data-go="ia"><i>🤖</i><b>Preguntar a la IA</b><span>Recomendaciones con los filtros activos</span></button>
         <button class="ab-card feat" data-go="data"><i>⬆</i><b>Cargar datos nuevos</b><span>Excel o CSV validados antes de reemplazar</span></button>
         <button class="ab-card feat" data-go="dash"><i>⬇</i><b>Exportar CSV y PDF</b><span>Botones junto a los filtros</span></button>
-      </div>
-
-      <h3 class="ab-h" id="glosario">Glosario de indicadores y términos</h3>
-      <div class="ab-card gl">
-        <div class="gl-tools">
-          <input type="search" id="glQ" placeholder="Buscar un término, por ejemplo margen" aria-label="Buscar en el glosario">
-          <div class="gl-cats" id="glCats"></div>
-        </div>
-        <div id="glList"></div>
-        <p class="status" id="glCount"></p>
       </div>
 
       <h3 class="ab-h" id="ab-ficha">Ficha técnica</h3>
@@ -424,6 +434,6 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
     </div>
   </div>
 </main>
-<script src="app.js?v=26"></script>
+<script src="app.js?v=27"></script>
 </body>
 </html>

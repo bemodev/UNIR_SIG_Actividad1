@@ -362,7 +362,7 @@ function renderChips() {
     ? chips.map(([id, t]) => `<span class="chip">${esc(t)}<button data-f="${id}" title="Quitar filtro">×</button></span>`).join('') + '<button class="chip clear" data-f="all">Limpiar todo</button>'
     : '<span class="hint">💡 Haga clic en una barra o sector de las gráficas para filtrar todo el dashboard por ese valor. · <a href="#" class="glink">📖 Glosario de indicadores</a></span>';
   const gl = $('chips').querySelector('.glink');
-  if (gl) gl.onclick = e => { e.preventDefault(); show('about'); setTimeout(() => $('glosario').scrollIntoView({ behavior: 'smooth' }), 50); };
+  if (gl) gl.onclick = e => { e.preventDefault(); openGlossary(); };
   if (S.aviso) $('chips').insertAdjacentHTML('afterbegin', `<span class="notice">${S.aviso}</span>`);
   if (S.ventas.length && !S.rows.length) $('chips').insertAdjacentHTML('afterbegin',
     '<span class="notice bad">⚠ Sin datos para los filtros seleccionados: los indicadores y gráficas quedan vacíos. <button data-f="all">Limpiar filtros</button></span>');
@@ -466,6 +466,7 @@ function renderKPIs(K, byMes) {
   if (!$('kpis').children.length) {
     $('kpis').innerHTML = KDEF.map(([k, l, , tip]) => `<div class="kpi" data-k="${k}" title="${tip}"><div class="l">${l}<span class="i">ⓘ</span></div><div class="v">—</div><div class="d"></div><div class="sp"></div></div>`).join('');
     observeReveal($('kpis'));
+    $('kpis').querySelectorAll('.kpi').forEach((box, i) => box.querySelector('.i').onclick = () => openGlossary(KDEF[i][1])); // ⓘ abre su definición
   }
   S.kPrev = S.kPrev || {};
   const cmp = comparacion();
@@ -639,7 +640,26 @@ function initAcercaDe() {
     $(a.dataset.ab).scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
   });
   renderGlosario();
+  // Panel lateral: botón de la barra, tarjeta de Acerca de, Esc y clic fuera
+  $('btnGl').onclick = () => openGlossary();
+  document.querySelectorAll('[data-gl]').forEach(b => b.onclick = () => openGlossary());
+  $('glClose').onclick = closeGlossary; $('glBack').onclick = closeGlossary;
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('glPanel').hidden) closeGlossary(); });
 }
+let glFocus = null;
+function openGlossary(term) {
+  glFocus = document.activeElement;
+  if (term) { glCat = 'Todos'; $('glCats').querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.c === 'Todos')); }
+  $('glQ').value = term || ''; renderGlosario();
+  if (term) {
+    const all = [...$('glList').querySelectorAll('details')];
+    const d = all.find(x => norm(x.querySelector('summary').firstChild.textContent) === norm(term)) || all[0];
+    if (d) { d.open = true; all.filter(x => x !== d).forEach(x => x.open = false); d.parentNode.prepend(d); }
+  }
+  $('glBack').hidden = false; $('glPanel').hidden = false;
+  setTimeout(() => (term ? $('glClose') : $('glQ')).focus(), 50);
+}
+function closeGlossary() { $('glPanel').hidden = true; $('glBack').hidden = true; if (glFocus && glFocus.focus) glFocus.focus(); }
 
 /* ---------- Animación de aparición al hacer scroll ---------- */
 const IO = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => {

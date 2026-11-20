@@ -145,6 +145,8 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
 .hstat{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:14px 16px;backdrop-filter:blur(4px);animation:fadeUp .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d)}
 .hstat .n{font-size:clamp(18px,2.1vw,30px);white-space:nowrap;font-weight:700;font-variant-numeric:tabular-nums}.hstat .t{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#cdeefa}
 .hstat .n.down{color:#ffb4ae}.hstat .n.up{color:#a6f0c6}
+/* En Inicio la cabecera se limpia: la portada ya muestra la línea académica y el periodo analizado */
+body.is-home header .brand,body.is-home #dsinfo{display:none}
 /* Portada compacta: que entre completa en una pantalla de portátil sin scroll */
 .hero{min-height:0!important}
 .hero-in{padding:22px clamp(18px,4vw,48px)!important}
@@ -264,7 +266,6 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
         <g stroke="#d98b3a" stroke-width="2.5" opacity=".7"><line x1="100" y1="4" x2="100" y2="196"/><line x1="4" y1="100" x2="196" y2="100"/><line x1="32" y1="32" x2="168" y2="168"/><line x1="168" y1="32" x2="32" y2="168"/></g>
       </svg>
       <div class="hero-in">
-        <div class="eyebrow">San Francisco Crust Pizza · Sistema Inteligente de Apoyo a la Toma de Decisiones</div>
         <div class="biz" id="heroBiz"></div>
         <h2>De reportes en Excel a <span>decisiones basadas en datos</span></h2>
         <p>Ventas, clientes y productos integrados en un dashboard interactivo con filtros, hallazgos automáticos y un asistente de IA que propone recomendaciones comerciales.</p>
@@ -464,6 +465,6 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
     </div>
   </div>
 </main>
-<script src="app.js?v=30"></script>
+<script src="app.js?v=31"></script>
 </body>
 </html>

@@ -636,10 +636,18 @@ function renderDatosDestacados(all, meses, n) {
     $('tkN').textContent = `${k + 1}/${D.length}`; $('tkGo').textContent = l + ' →'; $('tkGo').onclick = e => { e.preventDefault(); show(v); };
     [...dots.children].forEach((b, j) => { b.classList.toggle('on', j === k); b.setAttribute('aria-current', j === k); });
   };
+  // Altura fija = la del dato más largo, para que la franja no cambie de tamaño al rotar
+  const igualar = () => {
+    const txt = $('tkTxt'); if (!txt || !txt.offsetWidth) return;
+    const prev = txt.innerHTML; txt.style.minHeight = '0'; let max = 0;
+    D.forEach(([ic, t]) => { txt.innerHTML = `<span class="tk-ic">${ic}</span>${t}`; max = Math.max(max, txt.offsetHeight); });
+    txt.innerHTML = prev; txt.style.minHeight = max + 'px';
+  };
+  S.tkIgualar = igualar;
   [...dots.children].forEach((b, k) => b.onclick = () => { set(k); restart(); });
   const restart = () => { clearInterval(S.tkTimer); S.tkTimer = setInterval(() => { if (!paused && $('v-home').classList.contains('on')) set((i + 1) % D.length); }, 5000); };
   box.onmouseenter = box.onfocusin = () => paused = true; box.onmouseleave = box.onfocusout = () => paused = false;
-  set(0); restart();
+  set(0); restart(); setTimeout(igualar, 250);
 }
 function animHome() {
   if (!S.home || !$('v-home').classList.contains('on')) return;
@@ -922,10 +930,10 @@ async function consultarLLM() {
 
 /* ---------- Eventos ---------- */
 const setHdr = () => document.documentElement.style.setProperty('--hdr', document.querySelector('header').offsetHeight + 'px');
-window.addEventListener('resize', setHdr);
+window.addEventListener('resize', () => { setHdr(); S.tkIgualar?.(); });
 function show(v) { document.querySelectorAll('.tabs button').forEach(b => { b.classList.toggle('on', b.dataset.v === v); b.setAttribute('aria-selected', b.dataset.v === v); }); document.querySelectorAll('.view').forEach(x => x.classList.toggle('on', x.id === 'v-' + v));
   const datos = v === 'data' || v === 'about' || v === 'home';
-  if (v === 'home') setTimeout(animHome, 0);
+  if (v === 'home') setTimeout(() => { animHome(); S.tkIgualar?.(); }, 0);
   document.body.classList.toggle('is-home', v === 'home');
   setHdr(); $('filters').style.display = datos ? 'none' : ''; $('kpis').style.display = datos ? 'none' : ''; $('chips').style.display = datos ? 'none' : '';
   window.scrollTo(0, 0); }

@@ -190,6 +190,7 @@ function buildVentas(rows, prods, clis) {
       id, fecha, mes: fecha.slice(0, 7), ciudad: r.ciudad || 'Sin ciudad', suc: r.sucursal || 'Sin sucursal',
       cli: cid, seg: c?.seg || 'Sin segmento', pid,
       prod: p ? `${p.nombre}${p.tam ? ' (' + p.tam + ')' : ''}` : (pid || 'Sin producto'), cat: p?.cat || 'Sin categoría',
+      inact: !!p && /^n/i.test(String(p.activo ?? '').trim()), edad: c?.edad || 0, // producto marcado "Activo = No"; edad del cliente
       cant, venta, costo, util, desc: num(r.descuentopct), canal: r.canal || 'Sin canal', pago: r.formapago || 'NA',
       tEnt: num(r.tiempoentregamin), tPrep: num(r.tiempopreparacionmin)
     });
@@ -480,7 +481,10 @@ function renderKPIs(K, byMes) {
       else if (p) { const r = (c - p) / p; d = `<span class="${cls(r >= 0)}">${r >= 0 ? '▲' : '▼'} ${Math.abs(r * 100).toFixed(1)}%</span>`; }
       if (d) d += ` <small>${cmp.label}</small>`;
     }
-    if (k === 'descM') d = `<div class="x">${fmtP(K.pctDesc || 0)} de las ventas con descuento</div>` + d;
+    if (k === 'descM') {
+      const lista = K.venta + (K.descM || 0), mL = lista ? (lista - K.costo) / lista : 0; // margen si se vendiera a precio de lista
+      d = `<div class="x">${fmtP(K.pctDesc || 0)} de las ventas con descuento · margen de lista ${fmtP(mL)} → real ${fmtP(K.margen)} (<span class="down">−${((mL - K.margen) * 100).toFixed(1)} pp</span>)</div>` + d;
+    }
     box.querySelector('.d').innerHTML = d;
     box.querySelector('.sp').innerHTML = sparkSVG(byMes.map(m => m[k] || 0));
   }
@@ -615,6 +619,9 @@ const GLOSARIO = [
   ['Negocio', 'Motivo de pérdida', 'Razón registrada por la que un cliente dejó de comprar (precio, tiempo de espera, mudanza…).'],
   ['Negocio', 'NPS', 'Net Promoter Score: probabilidad declarada de recomendar la marca (escala 0–10).'],
   ['Negocio', 'Tx/cliente', 'Transacciones por cliente: frecuencia de compra en el periodo.'],
+  ['KPI', 'Erosión del margen por descuentos', 'Diferencia entre el margen que se tendría vendiendo a precio de lista y el margen real después de descuentos, en puntos porcentuales.'],
+  ['Negocio', 'Producto inactivo', 'Producto marcado "Activo = No" en la base de productos. Si registra ventas, el catálogo está desactualizado o las sucursales siguen ofreciéndolo.'],
+  ['Negocio', 'Rango de edad', 'Agrupación de clientes por edad (menos de 25, 25–34, 35–44, 45–54, 55 o más) para ver qué grupos compran más y con qué ticket.'],
   ['App', 'Comparativo anual', 'Indicadores del último año con datos frente al anterior, con los filtros activos salvo las fechas.'],
   ['App', 'Hallazgos clave', 'Mejor y peor sucursal, producto y segmento calculados automáticamente con los filtros activos.'],
   ['App', 'Filtro cruzado', 'Al hacer clic en una barra o sector, todo el dashboard se filtra por ese valor.'],
@@ -718,12 +725,19 @@ function refresh() {
     options: { plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${c.dataset.label}: ${fmtN(c.raw.x)} u · ${c.raw.y.toFixed(1)}%` } } },
       scales: { x: { title: { display: true, text: 'Unidades vendidas' } }, y: { title: { display: true, text: 'Margen bruto %' } } } } });
   barH('cProdUtil', [...byProd].sort((a, b) => b.util - a.util).slice(0, 10), 'Utilidad', d => d.util, PAL[2]);
-  const totV = K.venta || 1;
+  const totV = K.venta || 1, inactSet = new Set(R.filter(r => r.inact).map(r => r.prod));
   table('tProd', [
     { h: 'Producto', v: d => d.k }, { h: 'Categoría', v: d => (R.find(r => r.prod === d.k) || {}).cat },
     { h: 'Unidades', v: d => d.cant, f: d => fmtN(d.cant) }, { h: 'Ventas', v: d => d.venta, f: d => fmt$(d.venta) },
     { h: '% ventas', v: d => d.venta / totV, f: d => fmtP(d.venta / totV) }, { h: 'Utilidad', v: d => d.util, f: d => fmt$(d.util) },
-    { h: 'Margen', v: d => d.margen, f: d => mTag(d.margen) }], [...byProd].sort((a, b) => b.util - a.util));
+    { h: 'Margen', v: d => d.margen, f: d => mTag(d.margen) },
+    { h: 'Activo', v: d => inactSet.has(d.k) ? 0 : 1, f: d => inactSet.has(d.k) ? '<span class="tag r">No</span>' : '<span class="tag g">Sí</span>' }], [...byProd].sort((a, b) => b.util - a.util));
+  // Alerta: ventas de productos marcados como inactivos en el catálogo
+  const inactRows = R.filter(r => r.inact), inactV = inactRows.reduce((s, r) => s + r.venta, 0);
+  const inactProds = group(inactRows, 'prod').sort((a, b) => b.venta - a.venta);
+  $('prodAlert').innerHTML = inactProds.length
+    ? `<div class="ab-card palert"><b>⚠ Se venden productos marcados como inactivos en el catálogo</b><span>${fmt$(inactV)} en ventas (${fmtP(inactV / (K.venta || 1))} del total) de ${inactProds.length} producto(s): ${inactProds.map(d => `${esc(d.k)} (${fmt$(d.venta)})`).join(', ')}. Revisar si el catálogo está desactualizado o si las sucursales siguen ofreciéndolos.</span></div>`
+    : '';
 
   // Sucursales
   chart('cSucMargen', { type: 'bar', data: { labels: bySuc.map(d => d.k), datasets: [
@@ -754,6 +768,15 @@ function refresh() {
     options: { scales: { y: { ticks: { callback: v => '$' + v } }, y1: { position: 'right', grid: { drawOnChartArea: false } } } } });
   const byPago = group(R, 'pago').sort((a, b) => b.venta - a.venta);
   chart('cPago', { type: 'doughnut', data: { labels: byPago.map(d => d.k), datasets: [{ data: byPago.map(d => d.venta), backgroundColor: PAL }] } });
+  // Ventas por rango de edad del cliente
+  const RANGOS = ['Menos de 25', '25–34', '35–44', '45–54', '55 o más'];
+  const rango = e => !e ? 'Sin dato' : e < 25 ? RANGOS[0] : e < 35 ? RANGOS[1] : e < 45 ? RANGOS[2] : e < 55 ? RANGOS[3] : RANGOS[4];
+  const byEdad = group(R, r => rango(r.edad)), ordE = [...RANGOS, 'Sin dato'].map(k => byEdad.find(d => d.k === k)).filter(Boolean);
+  chart('cEdad', { type: 'bar', data: { labels: ordE.map(d => d.k), datasets: [
+    { label: 'Ventas', data: ordE.map(d => d.venta), backgroundColor: PAL[0], yAxisID: 'y' },
+    { label: 'Ticket promedio', fmt: '$2', data: ordE.map(d => d.ticket), type: 'line', borderColor: PAL[2], yAxisID: 'y1' }] },
+    options: { scales: { y: moneyAxis, y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => '$' + v } } } } });
+  S.byEdad = ordE;
   const segCli = segInfo();
   table('tSeg', [
     { h: 'Segmento', v: d => d.k }, { h: 'Ventas', v: d => d.venta, f: d => fmt$(d.venta) }, { h: '% ventas', v: d => d.venta / totV, f: d => fmtP(d.venta / totV) },
@@ -791,6 +814,8 @@ function contextoIA() {
     ciudades: s.byCiudad.map(pick), sucursales: s.bySuc.map(d => ({ ...pick(d), entrega_min: +d.entrega.toFixed(1), pct_entregas_tardias: +(d.pctTarde * 100).toFixed(1), prep_min: +d.prep.toFixed(1) })),
     segmentos: s.bySeg.map(d => ({ ...pick(d), pct_activos: +((s.segCli[d.k]?.act || 0) * 100).toFixed(1), nps: +(s.segCli[d.k]?.nps || 0).toFixed(1), motivo_perdida_principal: s.segCli[d.k]?.motivo })),
     categorias: s.byCat.map(pick), canales: s.byCanal.map(pick),
+    ventas_por_rango_edad: (S.byEdad || []).map(pick),
+    productos_inactivos_vendidos: group(S.rows.filter(r => r.inact), 'prod').map(pick),
     top_productos_utilidad: top(s.byProd, 8, (a, b) => b.util - a.util).map(pick),
     productos_menor_utilidad: top(s.byProd, 8, (a, b) => a.util - b.util).map(pick),
     productos_menor_margen: top(s.byProd, 5, (a, b) => a.margen - b.margen).map(pick)

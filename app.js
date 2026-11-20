@@ -485,6 +485,36 @@ function renderKPIs(K, byMes) {
   }
 }
 
+/* ---------- Comparativo anual (los dos últimos años con datos; ignora el filtro de fechas) ---------- */
+function renderYoY() {
+  const base = filtrar('', ''), anios = [...new Set(base.map(v => v.fecha.slice(0, 4)))].sort();
+  if (anios.length < 2) {
+    $('yoyTitle').textContent = 'Comparativo anual';
+    $('tYoY').innerHTML = '<p class="status">Se necesitan datos de al menos dos años para comparar.</p>';
+    if (S.charts.cYoY) { S.charts.cYoY.destroy(); delete S.charts.cYoY; }
+    return;
+  }
+  const [a0, a1] = anios.slice(-2), A = base.filter(v => v.fecha.startsWith(a0)), B = base.filter(v => v.fecha.startsWith(a1));
+  const kA = kpis(A), kB = kpis(B);
+  $('yoyTitle').textContent = `Comparativo anual ${a0} vs ${a1}`;
+  const filas = [['Ventas totales', 'venta', fmt$], ['Utilidad bruta', 'util', fmt$], ['Margen bruto', 'margen', fmtP, 'pp'], ['Ticket promedio', 'ticket', fmt$2],
+    ['N.º transacciones', 'ntx', fmtN], ['N.º clientes', 'ncli', fmtN], ['Unidades vendidas', 'cant', fmtN], ['Descuentos otorgados', 'descM', fmt$, '', true],
+    ['Entrega media (min)', 'entrega', v => v.toFixed(1), '', true]];
+  const varCel = (a, b, pp, inv) => {
+    if (pp) { const d = (b - a) * 100; return `<span class="${(d >= 0) !== !!inv ? 'up' : 'down'}">${d >= 0 ? '▲' : '▼'} ${Math.abs(d).toFixed(1)} pp</span>`; }
+    if (!a) return '—';
+    const r = (b - a) / a; return `<span class="${(r >= 0) !== !!inv ? 'up' : 'down'}">${r >= 0 ? '▲' : '▼'} ${Math.abs(r * 100).toFixed(1)}%</span>`;
+  };
+  $('tYoY').innerHTML = `<table><thead><tr><th>Indicador</th><th>${a0}</th><th>${a1}</th><th>Variación</th></tr></thead><tbody>` +
+    filas.map(([l, k, f, pp, inv]) => `<tr><td>${l}</td><td>${f(kA[k] || 0)}</td><td>${f(kB[k] || 0)}</td><td>${varCel(kA[k] || 0, kB[k] || 0, pp, inv)}</td></tr>`).join('') + '</tbody></table>';
+  const MES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const serie = rows => { const m = Array(12).fill(0); rows.forEach(v => m[+v.fecha.slice(5, 7) - 1] += v.venta); return m; };
+  chart('cYoY', { type: 'bar', data: { labels: MES, datasets: [
+    { label: `Ventas ${a0}`, data: serie(A), backgroundColor: PAL[6] },
+    { label: `Ventas ${a1}`, data: serie(B), backgroundColor: PAL[0] }] },
+    options: { scales: { y: moneyAxis } } });
+}
+
 /* ---------- Hallazgos clave automáticos ---------- */
 function renderInsights(R, byMes, bySuc, byProd, bySeg, K) {
   // Tendencia (banda superior) + matriz Dimensión × (mejor / a atender): responde a las preguntas 2, 3 y 4 del caso
@@ -531,6 +561,12 @@ function renderHome() {
   const n = meses.length >= 24 ? 12 : Math.floor(meses.length / 2);
   const ult = meses.slice(-n).reduce((s, d) => s + d.venta, 0), ant = meses.slice(-2 * n, -n).reduce((s, d) => s + d.venta, 0);
   const tr = ant ? (ult - ant) / ant : 0;
+  // Resultado del caso (Acerca de): variación y su causa, sobre toda la base
+  const txU = meses.slice(-n).reduce((s, d) => s + d.ntx, 0), txA = meses.slice(-2 * n, -n).reduce((s, d) => s + d.ntx, 0);
+  if (ant && txA && txU) {
+    const rTx = (txU - txA) / txA, rTk = (ult / txU - ant / txA) / (ant / txA), pc = v => (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1) + ' %';
+    $('abResultado').textContent = `Ventas de los últimos ${n} meses ${pc(tr)} frente a los ${n} anteriores, explicado sobre todo por ${Math.abs(rTx) >= Math.abs(rTk) ? 'el número de compras' : 'el gasto por compra'}: transacciones ${pc(rTx)} y ticket ${pc(rTk)}. El dashboard lo detecta y la IA propone acciones.`;
+  }
   S.home = [
     ['Ventas totales', K.venta, fmt$, ''],
     ['Margen bruto', K.margen, fmtP, ''],
@@ -553,6 +589,56 @@ function animHome() {
   const els = $('heroStats').querySelectorAll('.n');
   S.home.forEach(([, val, fmt], i) => { els[i]._tok = 0; animateNum(els[i], 0, val, fmt); });
   const line = $('heroLine'); line.style.animation = 'none'; void line.getBBox(); line.style.animation = ''; // reinicia el trazo
+}
+
+/* ---------- Acerca de: glosario con buscador y categorías, navegación interna ---------- */
+const GLOSARIO = [
+  ['KPI', 'Ventas totales', 'Suma de la venta neta (después de descuentos) del periodo y filtros seleccionados.'],
+  ['KPI', 'Utilidad bruta', 'Ventas totales − costo total de los productos vendidos.'],
+  ['KPI', 'Margen bruto', 'Utilidad bruta ÷ ventas totales. Indica cuántos centavos de cada dólar vendido quedan tras el costo del producto.'],
+  ['KPI', 'Ticket promedio', 'Ventas totales ÷ número de transacciones: gasto medio por compra.'],
+  ['KPI', 'N.º clientes', 'Clientes distintos que compraron al menos una vez en el periodo.'],
+  ['KPI', 'N.º transacciones', 'Ventas distintas (VentaID) registradas.'],
+  ['KPI', 'Unidades vendidas', 'Suma de las cantidades vendidas.'],
+  ['KPI', 'Descuentos otorgados', 'Monto cedido en descuentos: precio de lista − venta neta, con el % de ventas que tuvo descuento. Que suba es negativo para el margen (se muestra en rojo).'],
+  ['KPI', 'Transacciones vs ticket', 'Ventas = transacciones × ticket promedio. Indica si las ventas cambian por el número de compras o por el gasto en cada compra.'],
+  ['KPI', 'Entrega media (delivery)', 'Tiempo promedio de entrega de los pedidos a domicilio, en minutos.'],
+  ['KPI', `Pedidos de más de ${UMBRAL_ENTREGA} min`, `% de pedidos a domicilio que superan ${UMBRAL_ENTREGA} minutos. Umbral de referencia definido por el equipo; el caso no fija un objetivo de entrega.`],
+  ['KPI', 'Variación ▲▼', 'Cambio frente al periodo anterior de igual duración (o 2.ª mitad vs 1.ª mitad si no hay datos previos). Verde = mejora, rojo = empeora.'],
+  ['KPI', 'pp (puntos porcentuales)', 'Diferencia absoluta entre dos porcentajes: un margen que pasa de 60 % a 59 % baja 1 pp.'],
+  ['KPI', 'Tendencia de ventas', 'Ventas de los últimos 12 meses frente a los 12 meses anteriores.'],
+  ['Negocio', 'Sucursal', 'Restaurante físico de la cadena; cada ciudad puede tener varias.'],
+  ['Negocio', 'Segmento de cliente', 'Grupo de clientes con características similares (p. ej. Estudiante, Profesional, Familia, Corporativo).'],
+  ['Negocio', 'Canal', 'Forma en que se realizó la venta: Restaurante, Pickup (recoger) o Delivery (a domicilio).'],
+  ['Negocio', 'Cliente activo', 'Cliente marcado como activo en la base de clientes (sigue comprando).'],
+  ['Negocio', 'Motivo de pérdida', 'Razón registrada por la que un cliente dejó de comprar (precio, tiempo de espera, mudanza…).'],
+  ['Negocio', 'NPS', 'Net Promoter Score: probabilidad declarada de recomendar la marca (escala 0–10).'],
+  ['Negocio', 'Tx/cliente', 'Transacciones por cliente: frecuencia de compra en el periodo.'],
+  ['App', 'Comparativo anual', 'Indicadores del último año con datos frente al anterior, con los filtros activos salvo las fechas.'],
+  ['App', 'Hallazgos clave', 'Mejor y peor sucursal, producto y segmento calculados automáticamente con los filtros activos.'],
+  ['App', 'Filtro cruzado', 'Al hacer clic en una barra o sector, todo el dashboard se filtra por ese valor.'],
+  ['App', 'Matriz de rentabilidad', 'Gráfico de burbujas de productos: volumen (eje X), margen % (eje Y) y utilidad (tamaño).'],
+  ['App', 'Mini gráfica (sparkline)', 'Línea pequeña bajo cada KPI con su evolución mensual.'],
+  ['App', 'Integridad referencial', '% de ventas cuyo cliente y producto existen en sus bases maestras.'],
+  ['App', 'IA generativa (LLM)', 'Modelo de lenguaje que redacta recomendaciones a partir del resumen del dashboard; deben validarse críticamente.']
+];
+let glCat = 'Todos';
+function renderGlosario() {
+  const q = norm($('glQ').value);
+  const items = GLOSARIO.filter(([c, t, d]) => (glCat === 'Todos' || c === glCat) && (!q || norm(t + ' ' + d).includes(q)));
+  $('glList').innerHTML = items.map(([c, t, d], i) => `<details${q && i < 3 ? ' open' : ''}><summary>${esc(t)}<span class="cat c-${c}">${c}</span></summary><p>${esc(d)}</p></details>`).join('')
+    || '<p class="status">No hay términos que coincidan con la búsqueda.</p>';
+  $('glCount').textContent = `${items.length} de ${GLOSARIO.length} términos · clic en un término para ver su definición`;
+}
+function initAcercaDe() {
+  $('glCats').innerHTML = ['Todos', 'KPI', 'Negocio', 'App'].map(c => `<button type="button" data-c="${c}" class="${c === glCat ? 'on' : ''}">${c}</button>`).join('');
+  $('glCats').querySelectorAll('button').forEach(b => b.onclick = () => { glCat = b.dataset.c; $('glCats').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderGlosario(); });
+  $('glQ').addEventListener('input', renderGlosario);
+  document.querySelectorAll('.ab-nav a').forEach(a => a.onclick = e => {
+    e.preventDefault(); document.querySelectorAll('.ab-nav a').forEach(x => x.classList.toggle('on', x === a));
+    $(a.dataset.ab).scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
+  });
+  renderGlosario();
 }
 
 /* ---------- Animación de aparición al hacer scroll ---------- */
@@ -658,6 +744,7 @@ function refresh() {
     { h: 'NPS medio', v: d => (segCli[d.k] || {}).nps || 0, f: d => ((segCli[d.k] || {}).nps || 0).toFixed(1) }], bySeg);
 
   renderInsights(R, byMes, bySuc, byProd, bySeg, K);
+  renderYoY();
   S.summary = { K, byMes, byProd, byCiudad, bySuc, bySeg, byCat, byCanal, segCli };
 }
 function segInfo() {
@@ -782,6 +869,7 @@ document.querySelectorAll('.card').forEach(c => { const cv = c.querySelector('ca
 document.querySelector('.tabs').setAttribute('role', 'tablist');
 document.querySelectorAll('.tabs button').forEach(b => { b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', b.classList.contains('on')); });
 document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => show(b.dataset.go));
+initAcercaDe();
 // Primera visita: abre la portada; las siguientes, directo al Dashboard (preferencia guardada solo en este navegador)
 let visto = false; try { visto = localStorage.getItem('sfcp_visto') === '1'; localStorage.setItem('sfcp_visto', '1'); } catch (e) { }
 if (!visto) show('home');

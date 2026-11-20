@@ -55,6 +55,53 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
 @keyframes pop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
 .kpi{position:relative;overflow:hidden}
 .kpi .d{font-size:12px;margin-top:4px;min-height:16px}.kpi .d small{color:var(--mute);font-size:10px}
+/* Acerca de */
+.ab{display:flex;flex-direction:column;gap:12px}
+.ab-hero{border-radius:16px;padding:28px clamp(18px,4vw,40px);color:#fff;background:radial-gradient(120% 140% at 90% 0%,#14a9dc 0%,#006f96 50%,#0b2a45 100%)}
+.ab-eyebrow{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#bfe9f8}
+.ab-hero h2{font-size:clamp(22px,3.2vw,34px);margin:6px 0 8px;line-height:1.15;color:#fff}
+.ab-hero p{margin:0 0 16px;color:#e3f4fb;max-width:70ch}
+.ab-chips{display:flex;flex-wrap:wrap;gap:8px}
+.ab-chips span{background:rgba(8,32,54,.55);border:1px solid rgba(255,255,255,.35);border-radius:16px;padding:5px 12px;font-size:12.5px}
+.ab-chips i{font-style:normal;margin-right:6px}
+.ab-nav{position:sticky;top:0;z-index:4;display:flex;flex-wrap:wrap;gap:6px;background:var(--bg);padding:8px 0;border-bottom:1px solid var(--line)}
+.ab-nav a{font-size:13px;font-weight:600;color:var(--acc-d);text-decoration:none;padding:6px 14px;border-radius:18px;border:1px solid var(--line);background:var(--card)}
+.ab-nav a.on,.ab-nav a:hover{background:var(--acc);color:#fff;border-color:var(--acc)}
+.ab-h{margin:14px 0 0;font-size:17px;scroll-margin-top:60px}.ab-h small{font-weight:400;color:var(--mute);font-size:12px}
+#ab-proyecto{scroll-margin-top:10px}
+.ab-g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.ab-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
+.step p{margin:4px 0 0;font-size:13.5px;line-height:1.5}.ab-k{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.step.s1{border-top:4px solid var(--warn)}.step.s1 .ab-k{color:var(--warn)}
+.step.s2{border-top:4px solid var(--acc)}.step.s2 .ab-k{color:var(--acc-d)}
+.step.s3{border-top:4px solid var(--ok)}.step.s3 .ab-k{color:var(--ok)}
+.person{display:flex;align-items:center;gap:12px}.person b{display:block;font-size:13.5px;line-height:1.3}.person span{font-size:12px;color:var(--mute)}
+.av{width:42px;height:42px;flex:none;border-radius:50%;background:#e3f3fa;color:var(--acc-d);display:grid;place-items:center;font-weight:700;font-size:14px}
+.person.prof{border-color:var(--acc);background:#f2fafd}.person.prof .av{background:var(--acc);color:#fff}
+.feat{display:flex;flex-direction:column;gap:3px;text-align:left;cursor:pointer;font:inherit;color:inherit}
+.feat i{font-style:normal;font-size:22px}.feat b{font-size:14px;color:var(--acc-d)}.feat span{font-size:12.5px;color:var(--mute)}
+.gl-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.gl-tools input{flex:1;min-width:200px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font:inherit}
+.gl-cats{display:flex;gap:6px;flex-wrap:wrap}
+.gl-cats button{border:1px solid var(--line);background:#fff;border-radius:16px;padding:5px 12px;font:inherit;font-size:12.5px;cursor:pointer;color:var(--ink)}
+.gl-cats button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+#glList details{border-top:1px solid var(--line);padding:9px 2px}
+#glList summary{cursor:pointer;font-weight:600;display:flex;align-items:center;gap:8px;list-style:none}
+#glList summary::-webkit-details-marker{display:none}
+#glList summary::before{content:"›";color:var(--acc);font-size:18px;transition:transform .2s;display:inline-block}
+#glList details[open] summary::before{transform:rotate(90deg)}
+#glList summary .cat{margin-left:auto;font-size:11px;font-weight:600;border-radius:10px;padding:2px 8px;background:#e3f3fa;color:var(--acc-d)}
+#glList summary .cat.c-Negocio{background:#e3f6ec;color:var(--ok)}#glList summary .cat.c-App{background:#fff4dc;color:#7a4a00}
+#glList details p{margin:6px 0 2px 26px;font-size:13.5px;line-height:1.5}
+.arch{display:flex;align-items:stretch;gap:8px}.arch .ab-card{flex:1;display:flex;flex-direction:column;gap:2px}
+.arch span{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}.arch b{color:var(--acc-d)}.arch small{font-size:12px;color:var(--mute)}
+.arch .arrow{align-self:center;color:var(--acc);font-size:22px;font-weight:700}
+.grp b{display:block;margin-bottom:6px}.grp ul{margin:0;padding-left:18px;font-size:13px;line-height:1.55}
+.det summary{cursor:pointer;font-weight:600;color:var(--acc-d)}
+@media(max-width:800px){.ab-g3{grid-template-columns:1fr}.arch{flex-direction:column}.arch .arrow{transform:rotate(90deg)}}
+.yoy-in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;align-items:start}
+@media(max-width:900px){.yoy-in{grid-template-columns:1fr}}
+.yoy table td:first-child{font-weight:600}
 .kpi .x{font-size:12px;color:var(--mute);margin-bottom:2px}
 .causa{margin-top:6px;font-size:13px;padding:6px 10px;background:#fff;border:1px dashed var(--line);border-radius:8px}
 .up{color:var(--ok);font-weight:700}.down{color:var(--bad);font-weight:700}
@@ -192,6 +239,14 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
   <div class="view on" id="v-dash">
     <h3 class="sec">Hallazgos clave <small>(se recalculan con los filtros · clic para filtrar)</small></h3>
     <div class="insights" id="insights"></div>
+    <div class="card yoy" style="margin-bottom:14px">
+      <h3 id="yoyTitle">Comparativo anual</h3>
+      <p class="status" style="margin-top:-6px">Aplica los filtros de ciudad, sucursal, segmento, categoría, producto y canal; compara años completos, por eso no usa el filtro de fechas.</p>
+      <div class="yoy-in">
+        <div class="tw" id="tYoY"></div>
+        <div class="ch"><canvas id="cYoY"></canvas></div>
+      </div>
+    </div>
     <div class="grid">
       <div class="card" style="grid-column:1/-1"><h3>Evolución mensual de ventas y utilidad bruta</h3><div class="ch"><canvas id="cTrend"></canvas></div></div>
       <div class="card"><h3>Top 10 productos más vendidos (unidades)</h3><div class="ch"><canvas id="cTopProd"></canvas></div></div>
@@ -274,68 +329,80 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
   </div>
 
   <div class="view" id="v-about">
-    <div class="card about">
-      <h2>Acerca de este proyecto</h2>
-      <p>Aplicación desarrollada como parte de la <b>Actividad 1: Desarrollo de un Sistema Inteligente de Apoyo a la Toma de Decisiones con IA</b> de la asignatura Sistemas de Información para la Toma de Decisiones Comerciales, del Máster Universitario en Dirección Comercial y Ventas de la Universidad Internacional de La Rioja (UNIR).</p>
-      <div class="meta">
-        <div><b>Programa</b>Máster Universitario en Dirección Comercial y Ventas (PS) – PER 16768 – Octubre 2026</div>
-        <div><b>Asignatura</b>Sistemas de Información para la Toma de Decisiones Comerciales</div>
-        <div><b>Equipo</b>Grupo 5 – Lote 6</div>
-        <div><b>Profesor</b>Alberto Francesena Alvarez</div>
+    <div class="ab">
+      <section class="ab-hero" id="ab-proyecto">
+        <div class="ab-eyebrow">Actividad 1 · Universidad Internacional de La Rioja (UNIR)</div>
+        <h2>Sistema inteligente de apoyo a la toma de decisiones</h2>
+        <p>De reportes en Excel a decisiones basadas en datos para San Francisco Crust Pizza, cadena regional de pizzerías en Estados Unidos.</p>
+        <div class="ab-chips">
+          <span><i>🎓</i>Máster Universitario en Dirección Comercial y Ventas (PS)</span>
+          <span><i>📘</i>Sistemas de Información para la Toma de Decisiones Comerciales</span>
+          <span><i>👥</i>Grupo 5 – Lote 6</span>
+          <span><i>🗓</i>PER 16768 · Octubre 2026</span>
+        </div>
+      </section>
+
+      <nav class="ab-nav" aria-label="Secciones de Acerca de">
+        <a href="#ab-proyecto" data-ab="ab-proyecto">El proyecto</a>
+        <a href="#ab-equipo" data-ab="ab-equipo">Equipo</a>
+        <a href="#ab-funciones" data-ab="ab-funciones">Qué puedes hacer</a>
+        <a href="#glosario" data-ab="glosario">Glosario</a>
+        <a href="#ab-ficha" data-ab="ab-ficha">Ficha técnica</a>
+      </nav>
+
+      <h3 class="ab-h">El caso en 3 pasos</h3>
+      <div class="ab-g3">
+        <div class="ab-card step s1"><div class="ab-k">1 · Reto</div><p>La Dirección General decidía con reportes en Excel y no detectaba a tiempo tendencias, oportunidades ni problemas.</p></div>
+        <div class="ab-card step s2"><div class="ab-k">2 · Solución</div><p>Un dashboard web que integra Ventas, Clientes y Productos, con filtros, hallazgos automáticos, asistente de IA y actualización cargando nuevos Excel, sin tocar el código.</p></div>
+        <div class="ab-card step s3"><div class="ab-k">3 · Resultado</div><p id="abResultado">Las ventas cayeron en el último año, sobre todo por menos transacciones; el gasto por compra se mantuvo.</p></div>
       </div>
-      <h3>Integrantes</h3>
-      <ul>
-        <li>Rodríguez Gallegos, Manuel Alejandro</li>
-        <li>Sánchez Paredes, Margot Elisabeth</li>
-        <li>Torres Lopez, Madeline Nicole</li>
-        <li>Betancourt Garces, Dario Jose</li>
-        <li>Urbina López, José Andrés</li>
-      </ul>
-      <h3 style="margin-top:16px">Sobre el dashboard</h3>
-      <p>San Francisco Crust Pizza, cadena regional de pizzerías en Estados Unidos, tomaba sus decisiones a partir de reportes en Excel. Este dashboard web integra sus bases de <b>Ventas, Clientes y Productos</b> para monitorizar los indicadores comerciales y apoyar la toma de decisiones:</p>
-      <ul>
-        <li><b>Dashboard ejecutivo:</b> ventas totales, utilidad bruta, margen bruto, ticket promedio, número de clientes y de transacciones, productos más vendidos y ventas por ciudad, sucursal y segmento de cliente.</li>
-        <li><b>Visualización:</b> gráficas de tendencia, rankings, matriz de rentabilidad de productos y análisis por sucursal y segmento.</li>
-        <li><b>Filtros:</b> fecha, ciudad, sucursal, segmento de cliente, categoría, producto y canal.</li>
-        <li><b>Actualización automática:</b> al cargar una nueva base de ventas, todos los indicadores y gráficas se recalculan sin modificar el código.</li>
-        <li><b>Asistente de IA:</b> genera recomendaciones comerciales a partir de los datos del dashboard. Estas deben ser analizadas críticamente por el equipo antes de incorporarlas a las conclusiones.</li>
-      </ul>
-      <h3 style="margin-top:16px" id="glosario">Glosario de indicadores y términos</h3>
-      <div class="gloss">
-        <dl>
-          <dt>Ventas totales</dt><dd>Suma de la venta neta (después de descuentos) del periodo y filtros seleccionados.</dd>
-          <dt>Utilidad bruta</dt><dd>Ventas totales − costo total de los productos vendidos.</dd>
-          <dt>Margen bruto</dt><dd>Utilidad bruta ÷ ventas totales. Indica cuántos centavos de cada dólar vendido quedan tras el costo del producto.</dd>
-          <dt>Ticket promedio</dt><dd>Ventas totales ÷ número de transacciones: gasto medio por compra.</dd>
-          <dt>N.º clientes</dt><dd>Clientes distintos que compraron al menos una vez en el periodo.</dd>
-          <dt>N.º transacciones</dt><dd>Ventas distintas (VentaID) registradas.</dd>
-          <dt>Unidades vendidas</dt><dd>Suma de las cantidades vendidas.</dd>
-          <dt>Variación ▲▼</dt><dd>Cambio frente al periodo anterior de igual duración (o, si no hay datos previos, 2.ª mitad vs 1.ª mitad del periodo). Verde = mejora, rojo = empeora.</dd>
-          <dt>pp (puntos porcentuales)</dt><dd>Diferencia absoluta entre dos porcentajes: un margen que pasa de 60 % a 59 % baja 1 pp.</dd>
-          <dt>Tendencia de ventas</dt><dd>Ventas de los últimos 12 meses frente a los 12 meses anteriores.</dd>
-          <dt>Transacciones vs ticket (causa de la tendencia)</dt><dd>Ventas = transacciones × ticket promedio. Indica si las ventas cambian porque hay más o menos compras, o porque cada compra es mayor o menor.</dd>
-          <dt>Descuentos otorgados</dt><dd>Monto cedido en descuentos: precio de lista − venta neta. Junto a él, el % de las ventas que tuvo algún descuento. Que suba es negativo para el margen (se muestra en rojo).</dd>
-          <dt>Entrega media (delivery)</dt><dd>Tiempo promedio de entrega de los pedidos a domicilio, en minutos.</dd>
-          <dt>Pedidos de más de 35 min</dt><dd>% de pedidos a domicilio que superan 35 minutos. Umbral de referencia definido por el equipo; el caso no fija un objetivo de entrega.</dd>
-          <dt>Mini gráfica (sparkline)</dt><dd>Línea pequeña bajo cada KPI con su evolución mensual.</dd>
-        </dl>
-        <dl>
-          <dt>Sucursal</dt><dd>Restaurante físico de la cadena; cada ciudad puede tener varias.</dd>
-          <dt>Segmento de cliente</dt><dd>Grupo de clientes con características similares (p. ej. Estudiante, Profesional, Familia, Corporativo).</dd>
-          <dt>Canal</dt><dd>Forma en que se realizó la venta: Restaurante, Pickup (recoger) o Delivery (a domicilio).</dd>
-          <dt>Cliente activo</dt><dd>Cliente marcado como activo en la base de clientes (sigue comprando).</dd>
-          <dt>Motivo de pérdida</dt><dd>Razón registrada por la que un cliente dejó de comprar (precio, tiempo de espera, mudanza…).</dd>
-          <dt>NPS</dt><dd>Net Promoter Score: probabilidad declarada de recomendar la marca (escala 0–10).</dd>
-          <dt>Tx/cliente</dt><dd>Transacciones por cliente: frecuencia de compra en el periodo.</dd>
-          <dt>Matriz de rentabilidad</dt><dd>Gráfico de burbujas de productos: volumen (eje X), margen % (eje Y) y utilidad (tamaño).</dd>
-          <dt>Filtro cruzado</dt><dd>Al hacer clic en una barra o sector, todo el dashboard se filtra por ese valor.</dd>
-          <dt>Hallazgos clave</dt><dd>Mejor y peor sucursal, producto y segmento calculados automáticamente con los filtros activos.</dd>
-          <dt>Integridad referencial</dt><dd>% de ventas cuyo cliente y producto existen en sus bases maestras.</dd>
-          <dt>IA generativa (LLM)</dt><dd>Modelo de lenguaje que redacta recomendaciones a partir del resumen del dashboard; deben validarse críticamente.</dd>
-        </dl>
+
+      <h3 class="ab-h" id="ab-equipo">Equipo</h3>
+      <div class="ab-g3">
+        <div class="ab-card person"><div class="av">MR</div><div><b>Rodríguez Gallegos, Manuel Alejandro</b><span>Integrante</span></div></div>
+        <div class="ab-card person"><div class="av">MS</div><div><b>Sánchez Paredes, Margot Elisabeth</b><span>Integrante</span></div></div>
+        <div class="ab-card person"><div class="av">MT</div><div><b>Torres Lopez, Madeline Nicole</b><span>Integrante</span></div></div>
+        <div class="ab-card person"><div class="av">DB</div><div><b>Betancourt Garces, Dario Jose</b><span>Integrante</span></div></div>
+        <div class="ab-card person"><div class="av">JU</div><div><b>Urbina López, José Andrés</b><span>Integrante</span></div></div>
+        <div class="ab-card person prof"><div class="av">🎓</div><div><b>Alberto Francesena Alvarez</b><span>Profesor de la asignatura</span></div></div>
       </div>
-      <h3 style="margin-top:16px">Ficha técnica</h3>
-      <div style="overflow-x:auto"><table class="tech">
+
+      <h3 class="ab-h" id="ab-funciones">Qué puedes hacer <small>clic para ir a cada sección</small></h3>
+      <div class="ab-g3">
+        <button class="ab-card feat" data-go="dash"><i>📊</i><b>Ver KPI y hallazgos</b><span>8 indicadores, mejor y peor sucursal, producto y segmento</span></button>
+        <button class="ab-card feat" data-go="dash"><i>🎯</i><b>Filtrar con un clic</b><span>Clic en barras o sectores; chips para quitar filtros</span></button>
+        <button class="ab-card feat" data-go="dash"><i>📅</i><b>Comparar 2024 vs 2025</b><span>Tabla de variaciones y ventas por mes</span></button>
+        <button class="ab-card feat" data-go="ia"><i>🤖</i><b>Preguntar a la IA</b><span>Recomendaciones con los filtros activos</span></button>
+        <button class="ab-card feat" data-go="data"><i>⬆</i><b>Cargar datos nuevos</b><span>Excel o CSV validados antes de reemplazar</span></button>
+        <button class="ab-card feat" data-go="dash"><i>⬇</i><b>Exportar CSV y PDF</b><span>Botones junto a los filtros</span></button>
+      </div>
+
+      <h3 class="ab-h" id="glosario">Glosario de indicadores y términos</h3>
+      <div class="ab-card gl">
+        <div class="gl-tools">
+          <input type="search" id="glQ" placeholder="Buscar un término, por ejemplo margen" aria-label="Buscar en el glosario">
+          <div class="gl-cats" id="glCats"></div>
+        </div>
+        <div id="glList"></div>
+        <p class="status" id="glCount"></p>
+      </div>
+
+      <h3 class="ab-h" id="ab-ficha">Ficha técnica</h3>
+      <div class="arch">
+        <div class="ab-card"><span>1 · Navegador</span><b>GitHub Pages</b><small>Lee los Excel y calcula todo en el equipo del usuario</small></div>
+        <div class="arrow">→</div>
+        <div class="ab-card"><span>2 · Intermediario</span><b>Cloudflare Worker</b><small>Recibe solo un resumen agregado, sin datos personales</small></div>
+        <div class="arrow">→</div>
+        <div class="ab-card"><span>3 · Modelo de IA</span><b>Llama 3.3 70B</b><small>Workers AI, cuota gratuita, sin API key del usuario</small></div>
+      </div>
+      <div class="ab-g3">
+        <div class="ab-card grp"><b>🧠 Inteligencia artificial</b><ul><li>Claude Code · Claude Opus 5.5 generó la aplicación (licencia de Claude)</li><li>Cloudflare Workers AI · Llama 3.3 70B para el asistente (gratuito)</li><li>Motor analítico propio para recomendaciones sin conexión</li></ul></div>
+        <div class="ab-card grp"><b>🌐 Publicación</b><ul><li>GitHub con beneficios de estudiante (Student Developer Pack)</li><li>GitHub Pages: enlace público sin permisos</li><li>Cloudflare Workers: plan gratuito</li></ul></div>
+        <div class="ab-card grp"><b>🧩 Datos y librerías</b><ul><li>3 Excel: Ventas, Clientes y Productos + config.json</li><li>SheetJS (Apache 2.0) · Chart.js (MIT)</li><li>html2canvas · jsPDF (MIT) · Open Sans (OFL)</li></ul></div>
+      </div>
+      <details class="ab-card det">
+        <summary>Ver tabla detallada de componentes y licencias</summary>
+        <div style="overflow-x:auto"><table class="tech">
         <thead><tr><th>Componente</th><th>Tecnología</th><th>Uso en el proyecto</th><th>Licencia / costo</th></tr></thead>
         <tbody>
           <tr><td>IA para generar la aplicación</td><td>Claude Code (Anthropic), modelo Claude Opus 5.5</td><td>Generación del código de la aplicación y del Worker a partir del prompt principal, con iteraciones guiadas por el equipo</td><td>Licencia / suscripción de Claude (Anthropic)</td></tr>
@@ -347,15 +414,16 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
           <tr><td>Frontend</td><td>HTML5, CSS3 y JavaScript sin frameworks</td><td>Interfaz, cálculo de indicadores, filtros y validaciones en el navegador</td><td>Estándares abiertos</td></tr>
           <tr><td>Lectura de Excel/CSV</td><td>SheetJS (xlsx 0.18.5)</td><td>Lectura de las bases de Ventas, Clientes y Productos</td><td>Código abierto (Apache 2.0)</td></tr>
           <tr><td>Gráficas</td><td>Chart.js 4.4.1</td><td>Visualizaciones del dashboard</td><td>Código abierto (MIT)</td></tr>
+          <tr><td>Exportación a PDF</td><td>html2canvas 1.4.1 · jsPDF 2.5.1</td><td>PDF de una sola página idéntico a la pantalla</td><td>Código abierto (MIT)</td></tr>
           <tr><td>Tipografía</td><td>Google Fonts · Open Sans</td><td>Línea gráfica inspirada en UNIR</td><td>Código abierto (OFL)</td></tr>
           <tr><td>Datos</td><td>3 archivos Excel (Ventas, Clientes, Productos) + <code>data/config.json</code></td><td>Fuente de información; reemplazables sin modificar el código</td><td>Material proporcionado por la asignatura</td></tr>
         </tbody>
-      </table></div>
-      <p class="status"><b>Arquitectura:</b> Navegador (GitHub Pages) → lee los Excel de <code>data/</code> y calcula KPI, gráficas y validaciones localmente → para la IA generativa envía solo un resumen agregado (sin datos personales de clientes) al Worker de Cloudflare → Workers AI (Llama 3.3) → respuesta mostrada en la pestaña Asistente IA.</p>
+        </table></div>
+      </details>
       <p class="status">Proyecto académico. Datos de uso exclusivamente educativo.</p>
     </div>
   </div>
 </main>
-<script src="app.js?v=24"></script>
+<script src="app.js?v=26"></script>
 </body>
 </html>

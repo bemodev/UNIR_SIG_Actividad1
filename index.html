@@ -116,6 +116,8 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:18px;overflow:hidden}
 .seg button{border:0;background:#fff;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer;color:var(--acc-d)}
 .seg button.on{background:var(--acc);color:#fff;font-weight:600}
+.ia-ctx{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:0;padding:10px 14px;margin-bottom:14px;font-size:13.5px;line-height:1.6}
+.ia-ctx b{color:var(--acc-d)}.ia-ctx .sep{color:var(--mute);margin:0 6px}
 .palert{border-color:#f5c2bd;background:#fde8e6;margin-bottom:14px;display:flex;flex-direction:column;gap:4px}
 .palert b{color:#8a1c16}.palert span{font-size:13.5px;color:#5c1612}
 .kpi .x{font-size:12px;color:var(--mute);margin-bottom:2px}
@@ -340,10 +342,11 @@ body.is-home main{padding-bottom:16px}
   </div>
 
   <div class="view" id="v-ia">
+    <div class="ia-ctx" id="iaCtx"></div>
     <div class="grid">
       <div class="card">
         <h3>🤖 Asistente IA – Recomendaciones comerciales</h3>
-        <p class="status">El asistente analiza los indicadores <b>con los filtros activos</b>. Modo automático: motor analítico integrado (sin conexión). Modo IA generativa: modelo de lenguaje Llama 3.3 70B ejecutado en Cloudflare Workers AI, disponible directamente desde el enlace y sin costo.</p>
+        <p class="status">Genera recomendaciones al instante con los <b>filtros activos</b>. Para preguntas abiertas, usa la IA generativa de la derecha.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
           <button class="btn" id="btnLocal">Generar recomendaciones (motor integrado)</button>
         </div>
@@ -468,6 +471,6 @@ body.is-home main{padding-bottom:16px}
     </div>
   </div>
 </main>
-<script src="app.js?v=33"></script>
+<script src="app.js?v=34"></script>
 </body>
 </html>

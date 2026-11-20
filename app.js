@@ -763,6 +763,11 @@ function refresh() {
   const R = S.rows, K = kpis(R);
   const byMes = group(R, 'mes').sort((a, b) => a.k.localeCompare(b.k));
   renderChips(); renderKPIs(K, byMes);
+  // Línea de contexto de la pestaña IA: qué datos recibirá el asistente
+  const filtrosTxt = Object.keys(FSEL).filter(id => $(id).value).map(id => `${FNAME[id]} ${esc($(id).value)}`);
+  const sp = '<span class="sep">·</span>';
+  $('iaCtx').innerHTML = `🧭 <b>La IA analizará:</b> Ventas ${fmt$(K.venta)}${sp}Margen ${fmtP(K.margen)}${sp}${fmtN(K.ntx)} transacciones${sp}Ticket ${fmt$2(K.ticket)}` +
+    `<br><b>Filtros:</b> ${filtrosTxt.length ? filtrosTxt.join(sp) : 'ninguno'}${sp}${$('fDesde').value || '—'} a ${$('fHasta').value || '—'}`;
   chart('cTrend', { type: 'line', data: { labels: byMes.map(d => d.k), datasets: [
     { label: 'Ventas', data: byMes.map(d => d.venta), borderColor: PAL[0], backgroundColor: PAL[0] + '22', fill: true, tension: .25 },
     { label: 'Utilidad bruta', data: byMes.map(d => d.util), borderColor: PAL[1], tension: .25 }] }, options: { scales: { y: moneyAxis } } });
@@ -935,7 +940,7 @@ function show(v) { document.querySelectorAll('.tabs button').forEach(b => { b.cl
   const datos = v === 'data' || v === 'about' || v === 'home';
   if (v === 'home') setTimeout(() => { animHome(); S.tkIgualar?.(); }, 0);
   document.body.classList.toggle('is-home', v === 'home');
-  setHdr(); $('filters').style.display = datos ? 'none' : ''; $('kpis').style.display = datos ? 'none' : ''; $('chips').style.display = datos ? 'none' : '';
+  setHdr(); $('filters').style.display = datos ? 'none' : ''; $('kpis').style.display = (datos || v === 'ia') ? 'none' : ''; // en IA: solo la línea de contexto $('chips').style.display = datos ? 'none' : '';
   window.scrollTo(0, 0); }
 document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => show(b.dataset.v));
 ['fDesde', 'fHasta', ...Object.keys(FSEL)].forEach(id => $(id).addEventListener('change', () => { if (id === 'fCiudad' || id === 'fCategoria') cascade(); refresh(); }));

@@ -726,12 +726,21 @@ function refresh() {
       scales: { x: { title: { display: true, text: 'Unidades vendidas' } }, y: { title: { display: true, text: 'Margen bruto %' } } } } });
   barH('cProdUtil', [...byProd].sort((a, b) => b.util - a.util).slice(0, 10), 'Utilidad', d => d.util, PAL[2]);
   const totV = K.venta || 1, inactSet = new Set(R.filter(r => r.inact).map(r => r.prod));
-  table('tProd', [
-    { h: 'Producto', v: d => d.k }, { h: 'Categoría', v: d => (R.find(r => r.prod === d.k) || {}).cat },
-    { h: 'Unidades', v: d => d.cant, f: d => fmtN(d.cant) }, { h: 'Ventas', v: d => d.venta, f: d => fmt$(d.venta) },
+  // Tabla de productos: vista resumen por categoría (predeterminada) o detalle por producto
+  const catDe = {}; R.forEach(r => { catDe[r.prod] = r.cat; });
+  const nProdCat = {}; Object.values(catDe).forEach(c => nProdCat[c] = (nProdCat[c] || 0) + 1);
+  const comunes = [{ h: 'Unidades', v: d => d.cant, f: d => fmtN(d.cant) }, { h: 'Ventas', v: d => d.venta, f: d => fmt$(d.venta) },
     { h: '% ventas', v: d => d.venta / totV, f: d => fmtP(d.venta / totV) }, { h: 'Utilidad', v: d => d.util, f: d => fmt$(d.util) },
-    { h: 'Margen', v: d => d.margen, f: d => mTag(d.margen) },
-    { h: 'Activo', v: d => inactSet.has(d.k) ? 0 : 1, f: d => inactSet.has(d.k) ? '<span class="tag r">No</span>' : '<span class="tag g">Sí</span>' }], [...byProd].sort((a, b) => b.util - a.util));
+    { h: 'Margen', v: d => d.margen, f: d => mTag(d.margen) }];
+  S.prodTabla = {
+    cat: () => table('tProd', [{ h: 'Categoría', v: d => d.k }, { h: 'N.º productos', v: d => nProdCat[d.k] || 0 }, ...comunes,
+      { h: 'Inactivos', v: d => [...inactSet].filter(p => catDe[p] === d.k).length, f: d => { const n = [...inactSet].filter(p => catDe[p] === d.k).length; return n ? `<span class="tag r">${n}</span>` : '<span class="tag g">0</span>'; } }],
+      [...byCat].sort((a, b) => b.util - a.util)),
+    prod: () => table('tProd', [{ h: 'Producto', v: d => d.k }, { h: 'Categoría', v: d => catDe[d.k] }, ...comunes,
+      { h: 'Activo', v: d => inactSet.has(d.k) ? 0 : 1, f: d => inactSet.has(d.k) ? '<span class="tag r">No</span>' : '<span class="tag g">Sí</span>' }],
+      [...byProd].sort((a, b) => b.util - a.util))
+  };
+  S.prodTabla[S.prodVista || 'cat']();
   // Alerta: ventas de productos marcados como inactivos en el catálogo
   const inactRows = R.filter(r => r.inact), inactV = inactRows.reduce((s, r) => s + r.venta, 0);
   const inactProds = group(inactRows, 'prod').sort((a, b) => b.venta - a.venta);
@@ -915,6 +924,11 @@ document.querySelector('.tabs').setAttribute('role', 'tablist');
 document.querySelectorAll('.tabs button').forEach(b => { b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', b.classList.contains('on')); });
 document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => show(b.dataset.go));
 initAcercaDe();
+document.querySelectorAll('[data-pv]').forEach(b => b.onclick = () => {
+  S.prodVista = b.dataset.pv;
+  document.querySelectorAll('[data-pv]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
+  S.prodTabla?.[S.prodVista]();
+});
 // Primera visita: abre la portada; las siguientes, directo al Dashboard (preferencia guardada solo en este navegador)
 let visto = false; try { visto = localStorage.getItem('sfcp_visto') === '1'; localStorage.setItem('sfcp_visto', '1'); } catch (e) { }
 if (!visto) show('home');

@@ -112,6 +112,10 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
 .yoy-in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;align-items:start}
 @media(max-width:900px){.yoy-in{grid-template-columns:1fr}}
 .yoy table td:first-child{font-weight:600}
+.thead-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.thead-row h3{margin:0}.thead-row h3 small{font-weight:400;color:var(--mute);font-size:12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer;color:var(--acc-d)}
+.seg button.on{background:var(--acc);color:#fff;font-weight:600}
 .palert{border-color:#f5c2bd;background:#fde8e6;margin-bottom:14px;display:flex;flex-direction:column;gap:4px}
 .palert b{color:#8a1c16}.palert span{font-size:13.5px;color:#5c1612}
 .kpi .x{font-size:12px;color:var(--mute);margin-bottom:2px}
@@ -286,7 +290,9 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
     <div class="grid">
       <div class="card"><h3>Matriz de rentabilidad: unidades vs. margen %</h3><div class="ch"><canvas id="cMatriz"></canvas></div></div>
       <div class="card"><h3>Top 10 productos por utilidad bruta</h3><div class="ch"><canvas id="cProdUtil"></canvas></div></div>
-      <div class="card" style="grid-column:1/-1"><h3>Detalle de productos (clic en columna para ordenar)</h3><div class="tw" id="tProd"></div></div>
+      <div class="card" style="grid-column:1/-1"><div class="thead-row"><h3>Rentabilidad <small>clic en una columna para ordenar</small></h3>
+        <div class="seg" role="group" aria-label="Vista de la tabla"><button type="button" data-pv="cat" class="on" aria-pressed="true">Por categoría</button><button type="button" data-pv="prod" aria-pressed="false">Por producto</button></div></div>
+        <div class="tw" id="tProd"></div></div>
     </div>
   </div>
 
@@ -438,6 +444,6 @@ h3.sec{margin:0 0 8px;font-size:15px}h3.sec small{font-weight:400;color:var(--mu
     </div>
   </div>
 </main>
-<script src="app.js?v=28"></script>
+<script src="app.js?v=29"></script>
 </body>
 </html>

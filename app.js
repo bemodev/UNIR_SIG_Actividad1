@@ -402,7 +402,7 @@ if (window.ChartDataLabels) { Chart.register(ChartDataLabels); Chart.defaults.se
 const abbr = v => { const a = Math.abs(v); return a >= 1e6 ? (v / 1e6).toFixed(2) + 'M' : a >= 1e3 ? (v / 1e3).toFixed(a >= 1e5 ? 0 : 1) + 'k' : Math.round(v).toString(); };
 const LF = { '$': v => '$' + abbr(v), u: v => abbr(v) + ' u.', cli: v => fmtN(v), min: v => v.toFixed(1), pct: v => v.toFixed(1) + '%' };
 // Por gráfica: tipo de etiqueta y, si aplica, qué datasets llevan etiqueta
-const LBL = { cCiudad: ['$'], cSucursal: ['$'], cTopProd: ['u'], cProdUtil: ['$'], cCategoria: ['$', [0]], cSucMargen: ['$', [0], 'pct', [1]],
+const LBL = { cCiudad: ['$'], cSucursal: ['$'], cTopProd: ['u'], cProdUtil: ['$'], cCategoria: ['$'], cSucMargen: ['$', [0], 'pct', [1]],
   cSucTiempo: ['min'], cMotivo: ['cli'], cActivos: ['stack'], cEdad: ['$', [0]], cSegmento: ['pie'], cCanal: ['pie'], cPago: ['pie'], cTrend: ['line'] };
 function etiquetas(id, cfg) {
   const L = LBL[id]; if (!L) return;

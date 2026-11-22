@@ -851,6 +851,21 @@ function refresh() {
     { label: 'Ticket promedio', fmt: '$2', data: ordE.map(d => d.ticket), type: 'line', borderColor: PAL[2], yAxisID: 'y1' }] },
     options: { scales: { y: moneyAxis, y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => '$' + v } } } } });
   S.byEdad = ordE;
+  // Clientes activos vs inactivos (estado actual de la base de clientes) entre quienes compraron con los filtros
+  const cliF = [...new Set(R.map(r => r.cli))].map(id => S.clientes.get(id)).filter(Boolean);
+  const esAct = c => /^s/i.test(String(c.activo ?? '').trim());
+  const segs = [...new Set(cliF.map(c => c.seg))].sort();
+  const act = segs.map(s => cliF.filter(c => c.seg === s && esAct(c)).length), ina = segs.map(s => cliF.filter(c => c.seg === s && !esAct(c)).length);
+  chart('cActivos', { type: 'bar', data: { labels: segs, datasets: [
+    { label: 'Activos', fmt: 'x', data: act, backgroundColor: '#1a9e5c' }, { label: 'Inactivos', fmt: 'x', data: ina, backgroundColor: '#d0342c' }] },
+    options: { indexAxis: 'y', scales: { x: { stacked: true }, y: { stacked: true } },
+      plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: c => { const t = act[c.dataIndex] + ina[c.dataIndex]; return ` ${c.dataset.label}: ${fmtN(c.raw)} (${fmtP(c.raw / (t || 1))})`; } } } } } });
+  const nA = act.reduce((a, b) => a + b, 0), nI = ina.reduce((a, b) => a + b, 0);
+  $('actNota').textContent = `${fmtN(nA)} activos (${fmtP(nA / ((nA + nI) || 1))}) y ${fmtN(nI)} inactivos entre los ${fmtN(nA + nI)} clientes que compraron con los filtros. Estado actual según la base de clientes (no depende del filtro de fechas).`;
+  const mot = {}; cliF.filter(c => !esAct(c)).forEach(c => { const m = c.motivo || 'Sin motivo'; mot[m] = (mot[m] || 0) + 1; });
+  const motO = Object.entries(mot).sort((a, b) => b[1] - a[1]);
+  chart('cMotivo', { type: 'bar', data: { labels: motO.map(m => m[0]), datasets: [{ label: 'Clientes inactivos', fmt: 'x', data: motO.map(m => m[1]), backgroundColor: '#d0342c' }] },
+    options: { indexAxis: 'y', plugins: { legend: { display: false } } } });
   const segCli = segInfo();
   table('tSeg', [
     { h: 'Segmento', v: d => d.k }, { h: 'Ventas', v: d => d.venta, f: d => fmt$(d.venta) }, { h: '% ventas', v: d => d.venta / totV, f: d => fmtP(d.venta / totV) },

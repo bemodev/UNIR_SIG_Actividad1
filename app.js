@@ -387,7 +387,7 @@ function group(rows, key) {
     if (r.desc > 0 && r.desc < 100) { g.descM += r.venta / (1 - r.desc / 100) - r.venta; g.nDesc++; } // monto cedido = precio de lista − venta neta
   }
   return [...m.values()].map(g => ({ ...g, ntx: g.tx.size, ncli: g.cli.size, margen: g.venta ? g.util / g.venta : 0, ticket: g.tx.size ? g.venta / g.tx.size : 0,
-    entrega: g.nEnt ? g.tEnt / g.nEnt : 0, prep: g.ntx ? g.tPrep / g.ntx : 0, pctDesc: g.nLin ? g.nDesc / g.nLin : 0, pctTarde: g.nEnt ? g.nTarde / g.nEnt : 0 }));
+    entrega: g.nEnt ? g.tEnt / g.nEnt : 0, prep: g.tx.size ? g.tPrep / g.nLin : 0, pctDesc: g.nLin ? g.nDesc / g.nLin : 0, pctTarde: g.nEnt ? g.nTarde / g.nEnt : 0 }));
 }
 function kpis(rows) {
   const g = group(rows, () => 'all')[0] || { venta: 0, util: 0, margen: 0, ticket: 0, ncli: 0, ntx: 0, cant: 0 };
@@ -395,14 +395,14 @@ function kpis(rows) {
 }
 
 /* ---------- Render ---------- */
-const FMTS = { '$': fmt$, '$2': fmt$2, n: v => fmtN(v) + ' u.', '%': v => v.toFixed(1) + '%', min: v => v.toFixed(1) + ' min', x: v => v.toFixed(1) };
+const FMTS = { '$': fmt$, '$2': fmt$2, n: v => fmtN(v) + ' u.', '%': v => v.toFixed(1) + '%', min: v => v.toFixed(1), x: v => v.toFixed(1) };
 const REDUCED =window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 /* ---------- Etiquetas de datos: resumen legible sin recargar (detalle exacto en el tooltip) ---------- */
 if (window.ChartDataLabels) { Chart.register(ChartDataLabels); Chart.defaults.set('plugins.datalabels', { display: false }); }
 const abbr = v => { const a = Math.abs(v); return a >= 1e6 ? (v / 1e6).toFixed(2) + 'M' : a >= 1e3 ? (v / 1e3).toFixed(a >= 1e5 ? 0 : 1) + 'k' : Math.round(v).toString(); };
-const LF = { '$': v => '$' + abbr(v), u: v => abbr(v) + ' u.', cli: v => fmtN(v), min: v => v.toFixed(1) + ' min', pct: v => v.toFixed(1) + '%' };
+const LF = { '$': v => '$' + abbr(v), u: v => abbr(v) + ' u.', cli: v => fmtN(v), min: v => v.toFixed(1), pct: v => v.toFixed(1) + '%' };
 // Por gráfica: tipo de etiqueta y, si aplica, qué datasets llevan etiqueta
-const LBL = { cCiudad: ['$'], cSucursal: ['$'], cTopProd: ['u'], cProdUtil: ['$'], cCategoria: ['$', [0]], cSucMargen: ['$', [0]],
+const LBL = { cCiudad: ['$'], cSucursal: ['$'], cTopProd: ['u'], cProdUtil: ['$'], cCategoria: ['$', [0]], cSucMargen: ['$', [0], 'pct', [1]],
   cSucTiempo: ['min'], cMotivo: ['cli'], cActivos: ['stack'], cEdad: ['$', [0]], cSegmento: ['pie'], cCanal: ['pie'], cPago: ['pie'], cTrend: ['line'] };
 function etiquetas(id, cfg) {
   const L = LBL[id]; if (!L) return;
@@ -415,10 +415,16 @@ function etiquetas(id, cfg) {
     formatter: v => '$' + abbr(v), align: 'top', anchor: 'end', color: '#1d2a33', font, backgroundColor: 'rgba(255,255,255,.85)', borderRadius: 4, padding: 3 };
   else {
     const fmtPor = di => (L[1] && Array.isArray(L[1]) && L[2]) ? (L[3].includes(di) ? LF[L[2]] : LF[L[0]]) : LF[L[0]];
-    const conLbl = di => !Array.isArray(L[1]) || L[1].includes(di) || (L[3] && L[3].includes(di));
+    const conLbl = di => !Array.isArray(L[1]) || L[1].includes(di) || !!(L[3] && L[3].includes(di));
     dl = { display: c => conLbl(c.datasetIndex) && !!c.dataset.data[c.dataIndex], formatter: (v, c) => fmtPor(c.datasetIndex)(v),
-      anchor: 'end', align: c => c.dataset.type === 'line' ? 'top' : 'end', offset: 2, clamp: true, color: '#1d2a33', font };
+      anchor: 'end', align: c => c.dataset.type === 'line' ? 'top' : 'end', offset: 2, clamp: true, color: '#1d2a33', font,
+      backgroundColor: 'rgba(255,255,255,.92)', borderRadius: 3, padding: { top: 1, bottom: 1, left: 3, right: 3 } };
     cfg.options.layout = { padding: { top: 18, right: cfg.options.indexAxis === 'y' ? 52 : 8 } };
+  }
+  // Barras sin cuadrícula: la etiqueta ya da el valor y la lectura queda limpia
+  if (cfg.type === 'bar') {
+    const sc = cfg.options.scales = { ...(cfg.options.scales || {}) };
+    ['x', 'y', ...Object.keys(sc)].forEach(k => { sc[k] = { ...(sc[k] || {}) }; sc[k].grid = { ...(sc[k].grid || {}), display: false }; });
   }
   cfg.options.plugins = cfg.options.plugins || {};
   cfg.options.plugins.datalabels = dl;
@@ -841,12 +847,17 @@ function refresh() {
     : '';
 
   // Sucursales
+  // Ventas (barras, zona inferior) y margen (línea, zona superior) separados para que no se crucen
+  const vMax = Math.max(...bySuc.map(d => d.venta), 1), mg = bySuc.map(d => d.margen * 100), mMin = Math.min(...mg), mMax = Math.max(...mg), mR = Math.max(mMax - mMin, 1);
   chart('cSucMargen', { type: 'bar', data: { labels: bySuc.map(d => d.k), datasets: [
-    { label: 'Ventas', data: bySuc.map(d => d.venta), backgroundColor: PAL[1], yAxisID: 'y' },
-    { label: 'Margen %', fmt: '%', data: bySuc.map(d => d.margen * 100), type: 'line', borderColor: PAL[0], yAxisID: 'y1' }] },
-    options: { scales: { y: moneyAxis, y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => v + '%' } } } } });
+    { label: 'Ventas', data: bySuc.map(d => d.venta), backgroundColor: PAL[1], yAxisID: 'y', order: 2 },
+    { label: 'Margen %', fmt: '%', data: mg, type: 'line', borderColor: PAL[2], backgroundColor: PAL[2], borderWidth: 2.5, pointRadius: 4, yAxisID: 'y1', order: 1 }] },
+    options: { scales: { x: { grid: { display: false } },
+      y: { ...moneyAxis, max: vMax * 1.7, grid: { color: 'rgba(0,0,0,.05)' } },
+      y1: { position: 'right', min: mMin - mR * 3.2, max: mMax + mR * 0.35, grid: { drawOnChartArea: false }, ticks: { callback: v => v.toFixed(1) + '%' } } } } });
   chart('cSucTiempo', { type: 'bar', data: { labels: bySuc.map(d => d.k), datasets: [
-    { label: 'Entrega (delivery)', fmt: 'min', data: bySuc.map(d => d.entrega), backgroundColor: PAL[3] }, { label: 'Preparación', fmt: 'min', data: bySuc.map(d => d.prep), backgroundColor: PAL[5] }] } });
+    { label: 'Entrega (delivery)', fmt: 'min', data: bySuc.map(d => d.entrega), backgroundColor: PAL[3] }, { label: 'Preparación', fmt: 'min', data: bySuc.map(d => d.prep), backgroundColor: PAL[5] }] },
+    options: { scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { display: false }, ticks: { callback: v => v + ' min' } } } } });
   table('tSuc', [
     { h: 'Sucursal', v: d => d.k }, { h: 'Ventas', v: d => d.venta, f: d => fmt$(d.venta) }, { h: 'Utilidad', v: d => d.util, f: d => fmt$(d.util) },
     { h: 'Margen', v: d => d.margen, f: d => mTag(d.margen) }, { h: 'Transacciones', v: d => d.ntx, f: d => fmtN(d.ntx) },

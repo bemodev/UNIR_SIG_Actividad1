@@ -397,10 +397,37 @@ function kpis(rows) {
 /* ---------- Render ---------- */
 const FMTS = { '$': fmt$, '$2': fmt$2, n: v => fmtN(v) + ' u.', '%': v => v.toFixed(1) + '%', min: v => v.toFixed(1) + ' min', x: v => v.toFixed(1) };
 const REDUCED =window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* ---------- Etiquetas de datos: resumen legible sin recargar (detalle exacto en el tooltip) ---------- */
+if (window.ChartDataLabels) { Chart.register(ChartDataLabels); Chart.defaults.set('plugins.datalabels', { display: false }); }
+const abbr = v => { const a = Math.abs(v); return a >= 1e6 ? (v / 1e6).toFixed(2) + 'M' : a >= 1e3 ? (v / 1e3).toFixed(a >= 1e5 ? 0 : 1) + 'k' : Math.round(v).toString(); };
+const LF = { '$': v => '$' + abbr(v), u: v => abbr(v) + ' u.', cli: v => fmtN(v), min: v => v.toFixed(1) + ' min', pct: v => v.toFixed(1) + '%' };
+// Por gráfica: tipo de etiqueta y, si aplica, qué datasets llevan etiqueta
+const LBL = { cCiudad: ['$'], cSucursal: ['$'], cTopProd: ['u'], cProdUtil: ['$'], cCategoria: ['$', [0]], cSucMargen: ['$', [0]],
+  cSucTiempo: ['min'], cMotivo: ['cli'], cActivos: ['stack'], cEdad: ['$', [0]], cSegmento: ['pie'], cCanal: ['pie'], cPago: ['pie'], cTrend: ['line'] };
+function etiquetas(id, cfg) {
+  const L = LBL[id]; if (!L) return;
+  const font = { size: 11, weight: '600', family: 'Open Sans' };
+  let dl;
+  if (L[0] === 'pie') dl = { display: c => { const t = c.dataset.data.reduce((a, b) => a + b, 0); return t && c.dataset.data[c.dataIndex] / t >= 0.05; },
+    formatter: (v, c) => Math.round(v / c.dataset.data.reduce((a, b) => a + b, 0) * 100) + '%', color: '#fff', font: { ...font, size: 12, weight: '700' } };
+  else if (L[0] === 'stack') dl = { display: c => c.dataset.data[c.dataIndex] > 0, formatter: v => fmtN(v), color: '#fff', font, anchor: 'center', align: 'center' };
+  else if (L[0] === 'line') dl = { display: c => { if (c.datasetIndex !== 0) return false; const d = c.dataset.data, mx = Math.max(...d); return c.dataIndex === d.length - 1 || d[c.dataIndex] === mx; },
+    formatter: v => '$' + abbr(v), align: 'top', anchor: 'end', color: '#1d2a33', font, backgroundColor: 'rgba(255,255,255,.85)', borderRadius: 4, padding: 3 };
+  else {
+    const fmtPor = di => (L[1] && Array.isArray(L[1]) && L[2]) ? (L[3].includes(di) ? LF[L[2]] : LF[L[0]]) : LF[L[0]];
+    const conLbl = di => !Array.isArray(L[1]) || L[1].includes(di) || (L[3] && L[3].includes(di));
+    dl = { display: c => conLbl(c.datasetIndex) && !!c.dataset.data[c.dataIndex], formatter: (v, c) => fmtPor(c.datasetIndex)(v),
+      anchor: 'end', align: c => c.dataset.type === 'line' ? 'top' : 'end', offset: 2, clamp: true, color: '#1d2a33', font };
+    cfg.options.layout = { padding: { top: 18, right: cfg.options.indexAxis === 'y' ? 52 : 8 } };
+  }
+  cfg.options.plugins = cfg.options.plugins || {};
+  cfg.options.plugins.datalabels = dl;
+}
 function chart(id, cfg) {
   const fid = CHART_FILTER[id];
   cfg.options = Object.assign({ responsive: true, maintainAspectRatio: false, animation: { duration: REDUCED ? 0 : 700, easing: 'easeOutQuart' },
     plugins: { legend: { position: 'bottom' } } }, cfg.options || {});
+  etiquetas(id, cfg);
   // Tooltips con formato de negocio ($, %, unidades, minutos) y % del total en gráficos circulares
   cfg.options.plugins = cfg.options.plugins || { legend: { position: 'bottom' } };
   if (!cfg.options.plugins.tooltip) cfg.options.plugins.tooltip = { callbacks: { label: c => {

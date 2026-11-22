@@ -22,6 +22,7 @@ Dashboard web interactivo que integra las bases de **Ventas, Clientes y Producto
 
 ## Documentación
 - 📄 **[Prompt final](docs/PROMPT_generador_app.md)** — descripción completa de la aplicación, resultado del refinamiento iterativo con IA.
+- 💬 **[Conversación con la IA](docs/Conversaci%C3%B3n%20con%20IA.md)** — transcripción anonimizada de la sesión de trabajo con Claude Code: cómo se pidió, revisó y mejoró la aplicación paso a paso.
 - 📚 **Guías de implementación** (paso a paso, pensadas para alguien que parte de cero con IA):
 
 | Guía | Contenido |

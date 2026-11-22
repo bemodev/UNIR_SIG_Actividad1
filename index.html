@@ -110,9 +110,18 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
 .grp b{display:block;margin-bottom:6px}.grp ul{margin:0;padding-left:18px;font-size:13px;line-height:1.55}
 .det summary{cursor:pointer;font-weight:600;color:var(--acc-d)}
 @media(max-width:800px){.ab-g3{grid-template-columns:1fr}.arch{flex-direction:column}.arch .arrow{transform:rotate(90deg)}}
-.yoy-in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;align-items:start}
-@media(max-width:900px){.yoy-in{grid-template-columns:1fr}}
-.yoy table td:first-child{font-weight:600}
+.yoy-in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:20px;align-items:stretch}
+.yoy-in .ch{height:auto;min-height:420px}
+@media(max-width:900px){.yoy-in{grid-template-columns:1fr}.yoy-in .ch{min-height:300px}}
+.yoy-head{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.yoy-head>div{background:#f2fafd;border-radius:10px;padding:10px 12px;border-top:3px solid var(--acc)}
+.yoy-head>div.neg{background:#fdf1f0;border-top-color:var(--bad)}.yoy-head>div.pos{background:#eef9f2;border-top-color:var(--ok)}
+.yoy-head span{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute)}
+.yoy-head b{display:block;font-size:22px;color:#1d2a33;margin:2px 0}.yoy-head .neg b{color:var(--bad)}.yoy-head .pos b{color:var(--ok)}
+.yoy-head em{font-style:normal;font-size:11.5px;color:var(--mute)}
+.yoy-t th{background:transparent;border-bottom:2px solid var(--line)}.yoy-t td{border-bottom:1px solid #eef2f5;padding:7px 8px}.yoy-t tbody tr:hover{background:#f7fbfd}
+.yoy-t td:first-child{font-weight:600;color:#1d2a33}.yoy-t td.old{color:var(--mute)}.yoy-t td.new{font-weight:700;color:#1d2a33}
+.yv{display:inline-block;min-width:72px;text-align:center;font-size:12px;font-weight:700;border-radius:12px;padding:2px 8px}.yv.up{background:#e3f6ec;color:#14532d}.yv.down{background:#fde8e6;color:#8a1c16}.yv.eq{background:#eef1f6;color:var(--mute)}
 .thead-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}.thead-row h3{margin:0}.thead-row h3 small{font-weight:400;color:var(--mute);font-size:12px}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:18px;overflow:hidden}
 .seg button{border:0;background:#fff;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer;color:var(--acc-d)}
@@ -307,7 +316,7 @@ body.is-home main{padding-bottom:16px}
       <h3 id="yoyTitle">Comparativo anual</h3>
       <p class="status" style="margin-top:-6px">Aplica los filtros de ciudad, sucursal, segmento, categoría, producto y canal; compara años completos, por eso no usa el filtro de fechas.</p>
       <div class="yoy-in">
-        <div class="tw" id="tYoY"></div>
+        <div id="tYoY"></div>
         <div class="ch"><canvas id="cYoY"></canvas></div>
       </div>
     </div>
@@ -484,6 +493,6 @@ body.is-home main{padding-bottom:16px}
     </div>
   </div>
 </main>
-<script src="app.js?v=42"></script>
+<script src="app.js?v=45"></script>
 </body>
 </html>

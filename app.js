@@ -539,18 +539,34 @@ function renderYoY() {
     ['N.º transacciones', 'ntx', fmtN], ['N.º clientes', 'ncli', fmtN], ['Unidades vendidas', 'cant', fmtN], ['Descuentos otorgados', 'descM', fmt$, '', true],
     ['Entrega media (min)', 'entrega', v => v.toFixed(1), '', true]];
   const varCel = (a, b, pp, inv) => {
-    if (pp) { const d = (b - a) * 100; return `<span class="${(d >= 0) !== !!inv ? 'up' : 'down'}">${d >= 0 ? '▲' : '▼'} ${Math.abs(d).toFixed(1)} pp</span>`; }
+    const pill = (v, txt) => `<span class="yv ${Math.abs(v) < 0.0005 ? 'eq' : (v >= 0) !== !!inv ? 'up' : 'down'}">${v >= 0 ? '▲' : '▼'} ${txt}</span>`;
+    if (pp) { const d = (b - a) * 100; return pill(d / 100, Math.abs(d).toFixed(1) + ' pp'); }
     if (!a) return '—';
-    const r = (b - a) / a; return `<span class="${(r >= 0) !== !!inv ? 'up' : 'down'}">${r >= 0 ? '▲' : '▼'} ${Math.abs(r * 100).toFixed(1)}%</span>`;
+    const r = (b - a) / a; return pill(r, Math.abs(r * 100).toFixed(1) + '%');
   };
-  $('tYoY').innerHTML = `<table><thead><tr><th>Indicador</th><th>${a0}</th><th>${a1}</th><th>Variación</th></tr></thead><tbody>` +
-    filas.map(([l, k, f, pp, inv]) => `<tr><td>${l}</td><td>${f(kA[k] || 0)}</td><td>${f(kB[k] || 0)}</td><td>${varCel(kA[k] || 0, kB[k] || 0, pp, inv)}</td></tr>`).join('') + '</tbody></table>';
+  const rV = kA.venta ? (kB.venta - kA.venta) / kA.venta : 0;
+  const rT = kA.ntx ? (kB.ntx - kA.ntx) / kA.ntx : 0, pc = v => (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(1) + '%';
+  $('tYoY').innerHTML = `<div class="yoy-head">
+      <div><span>Ventas ${a1}</span><b>${fmt$(kB.venta)}</b><em>${fmt$(kA.venta)} en ${a0}</em></div>
+      <div class="${rV >= 0 ? 'pos' : 'neg'}"><span>Variación de ventas</span><b>${pc(rV)}</b><em>${fmt$(Math.abs(kB.venta - kA.venta))} ${rV >= 0 ? 'más' : 'menos'}</em></div>
+      <div class="${rT >= 0 ? 'pos' : 'neg'}"><span>Transacciones</span><b>${pc(rT)}</b><em>principal causa</em></div></div>` +
+    `<table class="yoy-t"><thead><tr><th>Indicador</th><th>${a0}</th><th>${a1}</th><th>Variación</th></tr></thead><tbody>` +
+    filas.map(([l, k, f, pp, inv]) => `<tr><td>${l}</td><td class="old">${f(kA[k] || 0)}</td><td class="new">${f(kB[k] || 0)}</td><td>${varCel(kA[k] || 0, kB[k] || 0, pp, inv)}</td></tr>`).join('') + '</tbody></table>';
   const MES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
   const serie = rows => { const m = Array(12).fill(0); rows.forEach(v => m[+v.fecha.slice(5, 7) - 1] += v.venta); return m; };
+  const sA = serie(A), sB = serie(B);
   chart('cYoY', { type: 'bar', data: { labels: MES, datasets: [
-    { label: `Ventas ${a0}`, data: serie(A), backgroundColor: PAL[6] },
-    { label: `Ventas ${a1}`, data: serie(B), backgroundColor: PAL[0] }] },
-    options: { scales: { y: moneyAxis } } });
+    // 2025 en barras y 2024 como línea de referencia; sobre cada barra, la variación del mes
+    { label: `${a1}`, data: sB, backgroundColor: PAL[0], borderRadius: 6, barPercentage: .62, categoryPercentage: .9, order: 2 },
+    { label: `${a0} (referencia)`, data: sA, type: 'line', borderColor: '#8a99a6', borderDash: [5, 4], borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#8a99a6', tension: .3, order: 1 }] },
+    options: { plugins: {
+        legend: { position: 'top', align: 'end', labels: { boxWidth: 12, boxHeight: 12, usePointStyle: true } },
+        datalabels: { display: c => c.datasetIndex === 0 && sA[c.dataIndex] > 0 && sB[c.dataIndex] > 0, anchor: 'end', align: 'end', offset: 2,
+          formatter: (v, c) => { const r = (v - sA[c.dataIndex]) / sA[c.dataIndex]; return (r >= 0 ? '+' : '−') + Math.abs(r * 100).toFixed(0) + '%'; },
+          color: c => sB[c.dataIndex] >= sA[c.dataIndex] ? '#14532d' : '#8a1c16', backgroundColor: c => sB[c.dataIndex] >= sA[c.dataIndex] ? '#e3f6ec' : '#fde8e6',
+          borderRadius: 8, padding: { top: 2, bottom: 2, left: 5, right: 5 }, font: { size: 10.5, weight: '700' } } },
+      layout: { padding: { top: 24 } },
+      scales: { x: { grid: { display: false }, border: { display: false } }, y: { ...moneyAxis, beginAtZero: true, grid: { color: 'rgba(0,0,0,.05)' }, border: { display: false } } } } });
 }
 
 /* ---------- Hallazgos clave automáticos ---------- */

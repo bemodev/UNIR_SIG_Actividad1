@@ -306,7 +306,7 @@ function renderQA() {
 
 
 /* ---------- Filtros ---------- */
-const FSEL = { fCiudad: 'ciudad', fSucursal: 'suc', fSegmento: 'seg', fCategoria: 'cat', fProducto: 'prod', fCanal: 'canal' };
+const FSEL = { fCiudad: 'ciudad', fSucursal: 'suc', fSegmento: 'seg', fCategoria: 'cat', fProducto: 'prod', fCanal: 'canal', fPago: 'pago' };
 function fillSelect(id, vals) {
   const cur = $(id).value;
   $(id).innerHTML = '<option value="">Todos</option>' + [...vals].sort().map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
@@ -339,8 +339,8 @@ function applyFilters() {
 
 /* ---------- Filtro cruzado (clic en gráficas) y chips de filtros activos ---------- */
 const CHART_FILTER = { cTopProd: 'fProducto', cProdUtil: 'fProducto', cMatriz: 'fProducto', cCiudad: 'fCiudad', cSucursal: 'fSucursal',
-  cSucMargen: 'fSucursal', cSucTiempo: 'fSucursal', cSegmento: 'fSegmento', cSegTicket: 'fSegmento', cCategoria: 'fCategoria', cCanal: 'fCanal' };
-const FNAME = { fCiudad: 'Ciudad', fSucursal: 'Sucursal', fSegmento: 'Segmento', fCategoria: 'Categoría', fProducto: 'Producto', fCanal: 'Canal' };
+  cSucMargen: 'fSucursal', cSucTiempo: 'fSucursal', cSegmento: 'fSegmento', cSegTicket: 'fSegmento', cCategoria: 'fCategoria', cCanal: 'fCanal', cPago: 'fPago', cActivos: 'fSegmento' };
+const FNAME = { fCiudad: 'Ciudad', fSucursal: 'Sucursal', fSegmento: 'Segmento', fCategoria: 'Categoría', fProducto: 'Producto', fCanal: 'Canal', fPago: 'Forma de pago' };
 function crossFilter(fid, val) {
   const s = $(fid);
   if (s.value === val) s.value = '';

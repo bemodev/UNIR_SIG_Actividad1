@@ -400,10 +400,10 @@ const REDUCED =window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)
 /* ---------- Etiquetas de datos: resumen legible sin recargar (detalle exacto en el tooltip) ---------- */
 if (window.ChartDataLabels) { Chart.register(ChartDataLabels); Chart.defaults.set('plugins.datalabels', { display: false }); }
 const abbr = v => { const a = Math.abs(v); return a >= 1e6 ? (v / 1e6).toFixed(2) + 'M' : a >= 1e3 ? (v / 1e3).toFixed(a >= 1e5 ? 0 : 1) + 'k' : Math.round(v).toString(); };
-const LF = { '$': v => '$' + abbr(v), u: v => abbr(v) + ' u.', cli: v => fmtN(v), min: v => v.toFixed(1), pct: v => v.toFixed(1) + '%' };
+const LF = { '$': v => '$' + abbr(v), '$2': v => '$' + v.toFixed(2), x: v => v.toFixed(1), u: v => abbr(v) + ' u.', cli: v => fmtN(v), min: v => v.toFixed(1), pct: v => v.toFixed(1) + '%' };
 // Por gráfica: tipo de etiqueta y, si aplica, qué datasets llevan etiqueta
 const LBL = { cCiudad: ['$'], cSucursal: ['$'], cTopProd: ['u'], cProdUtil: ['$'], cCategoria: ['$'], cSucMargen: ['$', [0], 'pct', [1]],
-  cSucTiempo: ['min'], cMotivo: ['cli'], cActivos: ['stack'], cEdad: ['$', [0]], cSegmento: ['pie'], cCanal: ['pie'], cPago: ['pie'], cTrend: ['line'] };
+  cSucTiempo: ['min'], cMotivo: ['cli'], cActivos: ['stack'], cEdad: ['$', [0], '$2', [1]], cSegTicket: ['$2', [0], 'x', [1]], cSegmento: ['pie'], cCanal: ['pie'], cPago: ['pie'], cTrend: ['line'] };
 function etiquetas(id, cfg) {
   const L = LBL[id]; if (!L) return;
   const font = { size: 11, weight: '600', family: 'Open Sans' };
@@ -902,8 +902,11 @@ function refresh() {
   const byEdad = group(R, r => rango(r.edad)), ordE = [...RANGOS, 'Sin dato'].map(k => byEdad.find(d => d.k === k)).filter(Boolean);
   chart('cEdad', { type: 'bar', data: { labels: ordE.map(d => d.k), datasets: [
     { label: 'Ventas', data: ordE.map(d => d.venta), backgroundColor: PAL[0], yAxisID: 'y' },
-    { label: 'Ticket promedio', fmt: '$2', data: ordE.map(d => d.ticket), type: 'line', borderColor: PAL[2], yAxisID: 'y1' }] },
-    options: { scales: { y: moneyAxis, y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => '$' + v } } } } });
+    { label: 'Ticket promedio', fmt: '$2', data: ordE.map(d => d.ticket), type: 'line', borderColor: PAL[2], backgroundColor: PAL[2], borderWidth: 2.5, pointRadius: 4, yAxisID: 'y1', order: 1 }] },
+    options: { scales: { y: { ...moneyAxis, max: Math.max(...ordE.map(d => d.venta), 1) * 1.6 },
+      // Escala del ticket ajustada a sus valores (no desde 0) y ubicada sobre las barras, para que se aprecien las diferencias
+      y1: (() => { const t = ordE.map(d => d.ticket), lo = Math.min(...t), hi = Math.max(...t), r = Math.max(hi - lo, .2);
+        return { position: 'right', min: lo - r * 2.2, max: hi + r * .6, grid: { drawOnChartArea: false }, ticks: { callback: v => '$' + v.toFixed(2) } }; })() } } });
   S.byEdad = ordE;
   // Clientes activos vs inactivos (estado actual de la base de clientes) entre quienes compraron con los filtros
   const cliF = [...new Set(R.map(r => r.cli))].map(id => S.clientes.get(id)).filter(Boolean);
@@ -911,8 +914,13 @@ function refresh() {
   const segs = [...new Set(cliF.map(c => c.seg))].sort();
   const act = segs.map(s => cliF.filter(c => c.seg === s && esAct(c)).length), ina = segs.map(s => cliF.filter(c => c.seg === s && !esAct(c)).length);
   chart('cActivos', { type: 'bar', data: { labels: segs, datasets: [
-    { label: 'Activos', fmt: 'x', data: act, backgroundColor: '#1a9e5c' }, { label: 'Inactivos', fmt: 'x', data: ina, backgroundColor: '#d0342c' }] },
-    options: { indexAxis: 'y', scales: { x: { stacked: true }, y: { stacked: true } },
+    { label: 'Activos', fmt: 'x', data: act, backgroundColor: '#1a9e5c' },
+    { label: 'Inactivos', fmt: 'x', data: ina, backgroundColor: '#d0342c',
+      // Además del número dentro del tramo, el total del segmento al final de la barra, en gris y separado
+      datalabels: { labels: {
+        val: { display: c => ina[c.dataIndex] > 0, formatter: v => fmtN(v), color: '#fff', anchor: 'center', align: 'center', font: { size: 11, weight: '600' } },
+        tot: { formatter: (v, c) => 'Total ' + fmtN(act[c.dataIndex] + ina[c.dataIndex]), anchor: 'end', align: 'end', offset: 6, color: '#5d6f7c', font: { size: 11, weight: '700' } } } } }] },
+    options: { indexAxis: 'y', layout: { padding: { right: 70 } }, scales: { x: { stacked: true }, y: { stacked: true } },
       plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: c => { const t = act[c.dataIndex] + ina[c.dataIndex]; return ` ${c.dataset.label}: ${fmtN(c.raw)} (${fmtP(c.raw / (t || 1))})`; } } } } } });
   const nA = act.reduce((a, b) => a + b, 0), nI = ina.reduce((a, b) => a + b, 0);
   $('actNota').textContent = `${fmtN(nA)} activos (${fmtP(nA / ((nA + nI) || 1))}) y ${fmtN(nI)} inactivos entre los ${fmtN(nA + nI)} clientes que compraron con los filtros. Estado actual según la base de clientes (no depende del filtro de fechas).`;

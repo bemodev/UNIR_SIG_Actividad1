@@ -41,7 +41,7 @@ Dashboard web interactivo que integra las bases de **Ventas, Clientes y Producto
 
 ## Funcionalidades principales
 - **Dashboard ejecutivo:** ventas, utilidad, margen, ticket, clientes, transacciones, unidades y descuentos, con variación ▲▼ y hallazgos clave.
-- **Filtros** por fecha, ciudad, sucursal, segmento, categoría, producto, canal y forma de pago; también al hacer clic en las gráficas.
+- **Filtros** por fecha, ciudad, sucursal, segmento, estado del cliente (activo/inactivo), categoría, producto, canal y forma de pago; también al hacer clic en las gráficas.
 - **Comparativo anual**, análisis de productos, sucursales y clientes.
 - **Carga de datos propios** (Excel o CSV) con validación, sin modificar el código.
 - **Asistente de IA:** motor de reglas integrado y modelo de lenguaje (Llama 3.3 vía Cloudflare Workers AI).

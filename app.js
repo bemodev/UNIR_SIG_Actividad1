@@ -188,7 +188,7 @@ function buildVentas(rows, prods, clis) {
     if (!r.sucursal) q.sinSuc++;
     out.push({
       id, fecha, mes: fecha.slice(0, 7), ciudad: r.ciudad || 'Sin ciudad', suc: r.sucursal || 'Sin sucursal',
-      cli: cid, seg: c?.seg || 'Sin segmento', pid,
+      cli: cid, seg: c?.seg || 'Sin segmento', est: c ? (/^s/i.test(String(c.activo ?? '').trim()) ? 'Activo' : 'Inactivo') : 'Sin dato', pid,
       prod: p ? `${p.nombre}${p.tam ? ' (' + p.tam + ')' : ''}` : (pid || 'Sin producto'), cat: p?.cat || 'Sin categoría',
       inact: !!p && /^n/i.test(String(p.activo ?? '').trim()), edad: c?.edad || 0, // producto marcado "Activo = No"; edad del cliente
       cant, venta, costo, util, desc: num(r.descuentopct), canal: r.canal || 'Sin canal', pago: r.formapago || 'NA',
@@ -306,7 +306,7 @@ function renderQA() {
 
 
 /* ---------- Filtros ---------- */
-const FSEL = { fCiudad: 'ciudad', fSucursal: 'suc', fSegmento: 'seg', fCategoria: 'cat', fProducto: 'prod', fCanal: 'canal', fPago: 'pago' };
+const FSEL = { fCiudad: 'ciudad', fSucursal: 'suc', fSegmento: 'seg', fEstado: 'est', fCategoria: 'cat', fProducto: 'prod', fCanal: 'canal', fPago: 'pago' };
 function fillSelect(id, vals) {
   const cur = $(id).value;
   $(id).innerHTML = '<option value="">Todos</option>' + [...vals].sort().map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
@@ -340,7 +340,7 @@ function applyFilters() {
 /* ---------- Filtro cruzado (clic en gráficas) y chips de filtros activos ---------- */
 const CHART_FILTER = { cTopProd: 'fProducto', cProdUtil: 'fProducto', cMatriz: 'fProducto', cCiudad: 'fCiudad', cSucursal: 'fSucursal',
   cSucMargen: 'fSucursal', cSucTiempo: 'fSucursal', cSegmento: 'fSegmento', cSegTicket: 'fSegmento', cCategoria: 'fCategoria', cCanal: 'fCanal', cPago: 'fPago', cActivos: 'fSegmento' };
-const FNAME = { fCiudad: 'Ciudad', fSucursal: 'Sucursal', fSegmento: 'Segmento', fCategoria: 'Categoría', fProducto: 'Producto', fCanal: 'Canal', fPago: 'Forma de pago' };
+const FNAME = { fCiudad: 'Ciudad', fSucursal: 'Sucursal', fSegmento: 'Segmento', fEstado: 'Estado del cliente', fCategoria: 'Categoría', fProducto: 'Producto', fCanal: 'Canal', fPago: 'Forma de pago' };
 function crossFilter(fid, val) {
   const s = $(fid);
   if (s.value === val) s.value = '';

@@ -725,7 +725,7 @@ const GLOSARIO = [
   ['Negocio', 'Sucursal', 'Restaurante físico de la cadena; cada ciudad puede tener varias.'],
   ['Negocio', 'Segmento de cliente', 'Grupo de clientes con características similares (p. ej. Estudiante, Profesional, Familia, Corporativo).'],
   ['Negocio', 'Canal', 'Forma en que se realizó la venta: Restaurante, Pickup (recoger) o Delivery (a domicilio).'],
-  ['Negocio', 'Cliente activo', 'Cliente marcado como activo en la base de clientes (sigue comprando).'],
+  ['Negocio', 'Cliente activo', 'Cliente marcado como activo en la base de clientes (sigue comprando). Se puede filtrar todo el dashboard con el filtro «Estado del cliente»; es el estado actual y no depende de las fechas.'],
   ['Negocio', 'Motivo de pérdida', 'Razón registrada por la que un cliente dejó de comprar (precio, tiempo de espera, mudanza…).'],
   ['Negocio', 'NPS', 'Net Promoter Score: probabilidad declarada de recomendar la marca (escala 0–10).'],
   ['Negocio', 'Tx/cliente', 'Transacciones por cliente: frecuencia de compra en el periodo.'],
@@ -1057,8 +1057,8 @@ $('btnPrint').onclick = async () => {
   } finally { b.disabled = false; b.textContent = txt; }
 };
 $('btnCSV').onclick = () => { // exporta las ventas con los filtros activos
-  const cols = ['id', 'fecha', 'ciudad', 'suc', 'cli', 'seg', 'pid', 'prod', 'cat', 'canal', 'pago', 'cant', 'venta', 'costo', 'util'];
-  const head = ['VentaID', 'Fecha', 'Ciudad', 'Sucursal', 'ClienteID', 'Segmento', 'ProductoID', 'Producto', 'Categoria', 'Canal', 'FormaPago', 'Cantidad', 'VentaNeta', 'CostoTotal', 'UtilidadBruta'];
+  const cols = ['id', 'fecha', 'ciudad', 'suc', 'cli', 'seg', 'est', 'pid', 'prod', 'cat', 'canal', 'pago', 'cant', 'venta', 'costo', 'util'];
+  const head = ['VentaID', 'Fecha', 'Ciudad', 'Sucursal', 'ClienteID', 'Segmento', 'EstadoCliente', 'ProductoID', 'Producto', 'Categoria', 'Canal', 'FormaPago', 'Cantidad', 'VentaNeta', 'CostoTotal', 'UtilidadBruta'];
   const q = v => { const s = String(v ?? ''); return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const csv = String.fromCharCode(0xFEFF) + [head.join(','), ...S.rows.map(r => cols.map(c => q(typeof r[c] === 'number' ? +r[c].toFixed(2) : r[c])).join(','))].join('\n');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));

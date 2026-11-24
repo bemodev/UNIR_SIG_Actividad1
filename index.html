@@ -112,7 +112,9 @@ th{font-size:11px;color:var(--mute);text-transform:uppercase;cursor:pointer;posi
 @media(max-width:800px){.ab-g3{grid-template-columns:1fr}.arch{flex-direction:column}.arch .arrow{transform:rotate(90deg)}}
 .yoy-in{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:20px;align-items:stretch}
 .yoy-in .ch{height:auto;min-height:420px}
-@media(max-width:900px){.yoy-in{grid-template-columns:1fr}.yoy-in .ch{min-height:300px}}
+@media(max-width:900px){.yoy-in{grid-template-columns:minmax(0,1fr)}.yoy-in .ch{min-height:300px}}
+@media(max-width:600px){.yoy-head{gap:6px}.yoy-head>div{padding:8px}.yoy-head span{font-size:9.5px;letter-spacing:.02em}.yoy-head b{font-size:17px}.yoy-head em{font-size:10.5px}
+.yoy-t{font-size:12px}.yoy-t th{font-size:10px}.yoy-t th,.yoy-t td{padding:6px 3px}.yoy-t .tag{padding:2px 5px;font-size:10.5px}.yoy-t td:first-child{white-space:normal}#tYoY{overflow-x:auto}}
 .yoy-head{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .yoy-head>div{background:#f2fafd;border-radius:10px;padding:10px 12px;border-top:3px solid var(--acc)}
 .yoy-head>div.neg{background:#fdf1f0;border-top-color:var(--bad)}.yoy-head>div.pos{background:#eef9f2;border-top-color:var(--ok)}
@@ -494,6 +496,6 @@ body.is-home main{padding-bottom:16px}
     </div>
   </div>
 </main>
-<script src="app.js?v=48"></script>
+<script src="app.js?v=49"></script>
 </body>
 </html>

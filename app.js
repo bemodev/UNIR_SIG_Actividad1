@@ -412,7 +412,7 @@ function etiquetas(id, cfg) {
     formatter: (v, c) => Math.round(v / c.dataset.data.reduce((a, b) => a + b, 0) * 100) + '%', color: '#fff', font: { ...font, size: 12, weight: '700' } };
   else if (L[0] === 'stack') dl = { display: c => c.dataset.data[c.dataIndex] > 0, formatter: v => fmtN(v), color: '#fff', font, anchor: 'center', align: 'center' };
   else if (L[0] === 'line') dl = { display: c => { if (c.datasetIndex !== 0) return false; const d = c.dataset.data, mx = Math.max(...d); return c.dataIndex === d.length - 1 || d[c.dataIndex] === mx; },
-    formatter: v => '$' + abbr(v), align: 'top', anchor: 'end', color: '#1d2a33', font, backgroundColor: 'rgba(255,255,255,.85)', borderRadius: 4, padding: 3 };
+    formatter: v => '$' + abbr(v), align: c => c.dataIndex === c.dataset.data.length - 1 ? 'left' : 'top', anchor: 'end', color: '#1d2a33', font, backgroundColor: 'rgba(255,255,255,.85)', borderRadius: 4, padding: 3 };
   else {
     const fmtPor = di => (L[1] && Array.isArray(L[1]) && L[2]) ? (L[3].includes(di) ? LF[L[2]] : LF[L[0]]) : LF[L[0]];
     const conLbl = di => !Array.isArray(L[1]) || L[1].includes(di) || !!(L[3] && L[3].includes(di));
@@ -555,6 +555,7 @@ function renderYoY() {
   const MES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
   const serie = rows => { const m = Array(12).fill(0); rows.forEach(v => m[+v.fecha.slice(5, 7) - 1] += v.venta); return m; };
   const sA = serie(A), sB = serie(B);
+  const nar = window.innerWidth < 600; // celular: etiquetas verticales y más pequeñas para que no se encimen
   chart('cYoY', { type: 'bar', data: { labels: MES, datasets: [
     // 2025 en barras y 2024 como línea de referencia; sobre cada barra, la variación del mes
     { label: `${a1}`, data: sB, backgroundColor: PAL[0], borderRadius: 6, barPercentage: .62, categoryPercentage: .9, order: 2 },
@@ -564,8 +565,8 @@ function renderYoY() {
         datalabels: { display: c => c.datasetIndex === 0 && sA[c.dataIndex] > 0 && sB[c.dataIndex] > 0, anchor: 'end', align: 'end', offset: 2,
           formatter: (v, c) => { const r = (v - sA[c.dataIndex]) / sA[c.dataIndex]; return (r >= 0 ? '+' : '−') + Math.abs(r * 100).toFixed(0) + '%'; },
           color: c => sB[c.dataIndex] >= sA[c.dataIndex] ? '#14532d' : '#8a1c16', backgroundColor: c => sB[c.dataIndex] >= sA[c.dataIndex] ? '#e3f6ec' : '#fde8e6',
-          borderRadius: 8, padding: { top: 2, bottom: 2, left: 5, right: 5 }, font: { size: 10.5, weight: '700' } } },
-      layout: { padding: { top: 24 } },
+          borderRadius: 8, rotation: nar ? -90 : 0, padding: nar ? { top: 1, bottom: 1, left: 3, right: 3 } : { top: 2, bottom: 2, left: 5, right: 5 }, font: { size: nar ? 9.5 : 10.5, weight: '700' } } },
+      layout: { padding: { top: nar ? 40 : 24 } },
       scales: { x: { grid: { display: false }, border: { display: false } }, y: { ...moneyAxis, beginAtZero: true, grid: { color: 'rgba(0,0,0,.05)' }, border: { display: false } } } } });
 }
 

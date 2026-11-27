@@ -4,6 +4,8 @@ Dashboard web interactivo que integra las bases de **Ventas, Clientes y Producto
 
 **▶ Aplicación publicada:** https://bemodev.github.io/UNIR_SIG_Actividad1/
 
+**🎬 Video de presentación (10 min):** [docs/video/SFCP_Grupo5_presentacion_720p.mp4](docs/video/SFCP_Grupo5_presentacion_720p.mp4) · subtítulos: [SFCP_Grupo5_subtitulos.srt](docs/video/SFCP_Grupo5_subtitulos.srt)
+
 ---
 
 ## Contexto académico

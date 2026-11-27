@@ -1,0 +1,616 @@
+1
+00:00:05,120 --> 00:00:10,160
+Hola, ¿qué tal? Mi nombre es José Andrés
+Urbina, pertenezco al Grupo 5 del Lote 6,
+
+2
+00:00:10,320 --> 00:00:15,337
+que está conformado por Madeline
+Torres, Margot Sánchez, Dario
+
+3
+00:00:15,337 --> 00:00:18,537
+Betancourt, Alejandro
+Rodríguez y mi persona.
+
+4
+00:00:18,917 --> 00:00:24,077
+El día de hoy voy a hacerles un video
+explicativo del sistema inteligente de apoyo
+
+5
+00:00:24,077 --> 00:00:29,117
+para la toma de decisiones desarrollado
+para la pizza San Francisco Crust.
+
+6
+00:00:29,117 --> 00:00:34,237
+Como parte de la actividad 1 del
+sistema de información para toma de
+
+7
+00:00:34,237 --> 00:00:36,357
+decisiones comerciales de UNIR.
+
+8
+00:00:36,717 --> 00:00:41,817
+A continuación les voy a dar una
+breve explicación introductoria de
+
+9
+00:00:42,527 --> 00:00:47,107
+cómo está conformada nuestra
+plataforma web de la
+
+10
+00:00:47,107 --> 00:00:49,307
+San Francisco Crust Pizza.
+
+11
+00:00:49,727 --> 00:00:54,787
+Como ustedes pueden observar, tenemos un
+menú bien amplio que consta de inicio que
+
+12
+00:00:54,787 --> 00:00:57,707
+está la pantalla actual. El dashboard,
+
+13
+00:00:58,347 --> 00:01:03,417
+productos, sucursales, clientes,
+asistente de inteligencia artificial,
+
+14
+00:01:03,717 --> 00:01:04,897
+carga de datos,
+
+15
+00:01:05,537 --> 00:01:07,417
+Acerca de y Glosario.
+
+16
+00:01:08,040 --> 00:01:12,860
+Como ustedes pueden ver, aquí también nos
+aparece una información general que se
+
+17
+00:01:12,860 --> 00:01:17,360
+va actualizando dándonos datos
+relevantes de la plataforma.
+
+18
+00:01:17,360 --> 00:01:22,580
+En la parte de acá abajo podemos también
+tener un acceso directo a ver el dashboard,
+
+19
+00:01:23,040 --> 00:01:28,340
+analizar productos, preguntarle a la
+inteligencia artificial y cargar los
+
+20
+00:01:28,340 --> 00:01:29,340
+datos.
+
+21
+00:01:29,460 --> 00:01:33,520
+Continuando con la explicación,
+vamos a revisar los principales
+
+22
+00:01:33,520 --> 00:01:37,700
+indicadores y los gráficos
+dentro de la plataforma.
+
+23
+00:01:38,140 --> 00:01:43,280
+Para ello vamos a ingresar
+al botón en Dashboard y aquí
+
+24
+00:01:43,280 --> 00:01:44,280
+podemos comenzar
+
+25
+00:01:44,420 --> 00:01:45,960
+a visualizar la información.
+
+26
+00:01:46,283 --> 00:01:51,503
+Aquí tenemos el tema de las ventas
+totales, utilidad bruta, margen
+
+27
+00:01:51,503 --> 00:01:56,703
+bruto, ticket promedio, número de clientes,
+número de transacciones, unidades
+
+28
+00:01:56,703 --> 00:01:59,223
+vendidas y descuentos otorgados.
+
+29
+00:01:59,523 --> 00:02:04,663
+También aquí tenemos unos hallazgos
+clave que ya nos vamos a desglosar
+
+30
+00:02:04,663 --> 00:02:10,043
+posteriormente. De igual forma
+en la siguiente cuadro tenemos
+
+31
+00:02:10,043 --> 00:02:15,023
+el comparativo anual del 2024 versus 2025
+
+32
+00:02:15,023 --> 00:02:19,723
+donde podemos visualizar
+el indicador el año 2024
+
+33
+00:02:19,723 --> 00:02:22,423
+-2025 y la variación que ha existido.
+
+34
+00:02:22,523 --> 00:02:27,823
+Un poco más abajo podemos observar
+un gráfico de la evolución
+
+35
+00:02:27,823 --> 00:02:32,623
+mensual de ventas y utilidad bruta y
+
+36
+00:02:33,283 --> 00:02:38,563
+en la parte final vamos a poder ver los
+gráficos del top 10 de los productos
+
+37
+00:02:38,563 --> 00:02:43,983
+más vendidos en unidades, las
+ventas por ciudad, ventas
+
+38
+00:02:43,983 --> 00:02:48,713
+por sucursales, ventas por
+segmento de cliente, ventas por
+
+39
+00:02:48,713 --> 00:02:50,833
+categoría y ventas por canal.
+
+40
+00:02:52,143 --> 00:02:57,423
+Continuando con la explicación
+vamos a proceder a la
+
+41
+00:02:57,423 --> 00:03:02,183
+aplicación de filtros que nosotros
+tenemos aquí en nuestra plataforma.
+
+42
+00:03:02,843 --> 00:03:07,963
+Tenemos los filtros con fecha
+desde hasta tenemos también
+
+43
+00:03:07,963 --> 00:03:13,083
+ciudad, sucursal, segmento,
+estado del cliente,
+
+44
+00:03:13,283 --> 00:03:14,903
+categoría, productos,
+
+45
+00:03:15,583 --> 00:03:17,223
+canal y formas de pago.
+
+46
+00:03:17,903 --> 00:03:21,923
+Vamos a hacer breve un ejercicio
+para aplicar los filtros.
+
+47
+00:03:22,563 --> 00:03:27,823
+Vamos a elegir aquí en ciudad
+Austin, si vieron cómo se
+
+48
+00:03:27,823 --> 00:03:32,063
+procedió con la actualización de la
+información de la parte de acá abajo y igual
+
+49
+00:03:32,063 --> 00:03:37,243
+manera se va a actualizar todos los
+indicadores y gráficos que les expliqué
+
+50
+00:03:37,243 --> 00:03:42,540
+anteriormente. Únicamente con el filtro
+de la ciudad de Austin y las fechas.
+
+51
+00:03:42,840 --> 00:03:47,080
+Pongámosle otro filtro más
+sucursal, pongámosle Austin North
+
+52
+00:03:47,080 --> 00:03:50,860
+y se procedió con la actualización
+como ustedes pudieron visualizar.
+
+53
+00:03:52,080 --> 00:03:57,410
+El segmento, pongámosle corporativo,
+se actualizó, quiere decir que está
+
+54
+00:03:57,410 --> 00:03:58,610
+funcionando todo correctamente.
+
+55
+00:03:58,767 --> 00:04:03,407
+Y también tenemos un botón que dice limpiar
+todos para limpiar todos los filtros
+
+56
+00:04:03,407 --> 00:04:08,427
+y ya irse regresa de manera a
+la información general y global
+
+57
+00:04:08,427 --> 00:04:13,607
+aplicando todos absolutamente los
+filtros con las fechas desde ya está,
+
+58
+00:04:13,687 --> 00:04:14,887
+como lo pueden visualizar.
+
+59
+00:04:15,807 --> 00:04:21,267
+Adicionalmente quería comentarles también
+que nosotros tenemos disponible en
+
+60
+00:04:21,267 --> 00:04:26,407
+nuestros filtros para poder descargar
+los archivos con la información
+
+61
+00:04:26,407 --> 00:04:31,587
+filtrada en CSV o PDF,
+vamos a dar un clic para
+
+62
+00:04:31,587 --> 00:04:36,807
+hacer un ejemplo en PDF, damos clic,
+se está generando y automáticamente
+
+63
+00:04:36,807 --> 00:04:42,107
+se descarga el archivo en formato PDF
+
+64
+00:04:42,107 --> 00:04:47,547
+con información del dashboard como
+ustedes pueden visualizar igual vamos
+
+65
+00:04:47,547 --> 00:04:52,987
+a hacer un ejemplo rápido,
+escojamos ahora Dallas y podemos
+
+66
+00:04:52,987 --> 00:04:58,287
+irnos al menú a productos y
+aquí nos va a ir detallando
+
+67
+00:04:58,287 --> 00:05:03,547
+también y de acuerdo al filtro
+que pusimos, igual manera podemos
+
+68
+00:05:03,547 --> 00:05:08,727
+poner sucursales y vamos a
+poder visualizar acá también la
+
+69
+00:05:08,727 --> 00:05:14,127
+información en sucursales,
+igual forma en clientes de
+
+70
+00:05:14,127 --> 00:05:18,947
+igual manera se puede visualizar todo ya
+con el filtro aplicado y nos da parece
+
+71
+00:05:18,947 --> 00:05:24,207
+los indicadores y los gráficos en
+cada uno de los ítems que estamos
+
+72
+00:05:24,207 --> 00:05:25,207
+eligiendo
+
+73
+00:05:26,787 --> 00:05:32,167
+Listo, en el siguiente paso voy
+a explicarles cómo realizar
+
+74
+00:05:32,167 --> 00:05:35,907
+la actualización de datos o carga de
+datos dentro de nuestra plataforma.
+
+75
+00:05:36,447 --> 00:05:40,787
+Para ello nos dirigimos al
+menú y elegimos cargar datos.
+
+76
+00:05:41,093 --> 00:05:46,333
+Dentro de cargar datos
+tenemos ya listo los
+
+77
+00:05:46,333 --> 00:05:51,553
+cuadros para poder dar clic y subir
+los archivos que pueden ser archivo
+
+78
+00:05:51,553 --> 00:05:56,993
+Excel o CSV. Con cualquier
+nombre ya que no
+
+79
+00:05:56,993 --> 00:06:02,213
+se modifica el código todos los indicadores
+y gráficos se van a actualizar al
+
+80
+00:06:02,213 --> 00:06:04,717
+instante. Y damos un clic.
+
+81
+00:06:05,027 --> 00:06:09,327
+Aquí podemos visualizar que nos
+aparece cargando bases de datos.
+
+82
+00:06:09,847 --> 00:06:12,387
+Si es que hubiera algún
+error, nos rechazaría.
+
+83
+00:06:12,387 --> 00:06:13,387
+Listo,
+
+84
+00:06:13,863 --> 00:06:18,687
+está cargado los datos.
+Y vamos a proceder a ir
+
+85
+00:06:18,687 --> 00:06:21,827
+al dashboard para visualizar.
+
+86
+00:06:22,343 --> 00:06:27,583
+Como siguiente punto voy a comentarles
+sobre nuestro asistente de
+
+87
+00:06:27,583 --> 00:06:32,543
+inteligencia artificial que tenemos dentro de
+nuestra plataforma para ello nos dirigimos
+
+88
+00:06:32,543 --> 00:06:38,023
+al menú y damos clic en asistente
+de inteligencia artificial y vamos
+
+89
+00:06:38,023 --> 00:06:43,363
+aquí a dirigirnos a la parte
+de preguntarle la inteligencia
+
+90
+00:06:43,363 --> 00:06:48,863
+generativa vamos a poner una pregunta:
+
+91
+00:06:48,863 --> 00:06:53,923
+¿Cuál es la ciudad que
+
+92
+00:06:53,923 --> 00:06:58,423
+más factura y le damos consultar a la IA.
+
+93
+00:06:58,423 --> 00:07:03,563
+Ahí como ustedes pueden ver
+está consultando y aquí nos
+
+94
+00:07:03,563 --> 00:07:08,963
+va a detallar en la parte de abajo
+según mi consulta mi pregunta
+
+95
+00:07:08,963 --> 00:07:14,343
+nos responde según los datos proporcionados
+en el dashboard los cuatro las
+
+96
+00:07:14,343 --> 00:07:18,003
+cuatro ciudades con mayor
+facturación son Houston
+
+97
+00:07:18,003 --> 00:07:22,743
+342.853 en venta segundo es san
+
+98
+00:07:22,743 --> 00:07:28,003
+antonio tercero Austin cuarto
+Dallas por lo tanto la
+
+99
+00:07:28,003 --> 00:07:31,003
+ciudad que más factura es
+Houston con un total de
+
+100
+00:07:31,003 --> 00:07:36,263
+342.853 en ventas aunque
+la diferencia con san
+
+101
+00:07:36,263 --> 00:07:41,550
+antonio es muy pequeña entonces De igual
+forma, al lado izquierdo tenemos un
+
+102
+00:07:41,550 --> 00:07:44,910
+botón para generar
+recomendaciones comerciales.
+
+103
+00:07:44,910 --> 00:07:49,570
+Le damos un click y aquí nos
+da unas recomendaciones como
+
+104
+00:07:49,570 --> 00:07:55,030
+réplicas de mejores prácticas, productos
+de estrella, productos de revisar,
+
+105
+00:07:55,150 --> 00:07:57,990
+segmento con mayor
+oportunidad, canales de venta,
+
+106
+00:07:58,690 --> 00:08:03,670
+tendencias ciudades. Obviamente esto está
+todo hecho en base al dashboard y con
+
+107
+00:08:03,670 --> 00:08:04,730
+la inteligencia artificial.
+
+108
+00:08:05,310 --> 00:08:10,110
+Para finalizar la explicación del
+uso de nuestra plataforma, vamos a
+
+109
+00:08:10,110 --> 00:08:15,050
+explicarles los hallazgos principales
+que nosotros encontramos.
+
+110
+00:08:15,360 --> 00:08:16,920
+Para ello, nos vamos al Dashboard.
+
+111
+00:08:17,227 --> 00:08:22,367
+Y como hallazgo principal, tenemos
+la tendencia de ventas que está
+
+112
+00:08:22,367 --> 00:08:27,807
+del menos 26.8% últimos
+12 meses versus los
+
+113
+00:08:27,807 --> 00:08:33,217
+12 meses anteriores. La
+causa es la variación
+
+114
+00:08:33,217 --> 00:08:38,377
+que viene principalmente del número
+de compras o transacciones que es del
+
+115
+00:08:38,377 --> 00:08:42,797
+menos 26.1% y el ticket promedio menos
+
+116
+00:08:42,797 --> 00:08:48,060
+0.8%. Otro de los hallazgos
+que podemos visualizar es
+
+117
+00:08:48,060 --> 00:08:53,063
+aquí la diferencia entre la
+sucursal de mayor desempeño que es
+
+118
+00:08:53,063 --> 00:08:58,363
+Austin South con la de menor
+desempeño que es Dallas
+
+119
+00:08:58,363 --> 00:08:59,363
+Downtown.
+
+120
+00:08:59,743 --> 00:09:05,147
+De igual manera, en productos podemos
+visualizar que la más rentable es
+
+121
+00:09:05,147 --> 00:09:10,087
+la mexicana. Y a revisar,
+tenemos la Mozzarella
+
+122
+00:09:10,087 --> 00:09:15,037
+Sticks. En la parte de segmentos
+tenemos el hallazgo de que el
+
+123
+00:09:15,037 --> 00:09:20,517
+segmento líder es el segmento
+profesional con un 40.2% de
+
+124
+00:09:20,517 --> 00:09:25,577
+las ventas. Un ticket de 29,52 USD con un
+
+125
+00:09:25,577 --> 00:09:30,837
+78% activa. Y el de menos
+participación es el
+
+126
+00:09:30,837 --> 00:09:36,097
+segmento corporativo, el 9.5% de las
+ventas con un ticket promedio de
+
+127
+00:09:36,097 --> 00:09:41,297
+29.76%, 75.8% activos
+
+128
+00:09:41,297 --> 00:09:43,877
+y por pérdida de tiempo en espera.
+
+129
+00:09:44,357 --> 00:09:49,537
+Muchas gracias por su atención, espero
+haber sido claro en una explicación acerca
+
+130
+00:09:49,537 --> 00:09:53,037
+de nuestro sistema inteligente
+de apoyo de decisiones.
